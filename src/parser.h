@@ -3,22 +3,29 @@
 
 #include "Operation.h"
 #include <vector>
+#include <map>
 
 using namespace std;
 
 
-typedef vector<Operation*> myOperationList;
+typedef vector<string> OperationNameList;
+typedef map<string, Operation*> OperationMap;
 
 class Parser {
 public:
     Parser();
     ~Parser();
     bool read_input(char*);
-    int size() {return operation_list.size();};
+    int size() {return operation_name_list.size();};
     const Operation& get_operation(int);
 
+    OperationNameList operation_name_list;
 private:
-    myOperationList operation_list;
+    void _read_header(ifstream& input_file);
+    bool _read_operation(ifstream &input_file);
+
+    OperationMap _operation_map;
+
 };
 
 

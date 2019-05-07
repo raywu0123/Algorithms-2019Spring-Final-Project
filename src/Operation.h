@@ -1,30 +1,23 @@
 #ifndef MYPOLYGON_OPERATION_H
 #define MYPOLYGON_OPERATION_H
 
+#include "bLib/bLibShape.h"
+#include "bLib/bLibPoint.h"
 #include <vector>
 
 using namespace std;
 
-typedef vector<pair<int, int>> myPolygon;
-typedef vector<myPolygon*> myPolygonList;
-
-
-enum operation_type {
-    M,
-    C,
-    SV,
-    SH,
-    SO,
-};
-
 
 class Operation {
 public:
-    Operation();
+    Operation(string type, string name): type(type), name(name) {};
     ~Operation();
 
-    char type;
-    myPolygonList polygon_list;
+    void add_polygon(string);
+
+    string type;
+    string name;
+    vector<bLib::bShape*> polygon_list;
 };
 
 

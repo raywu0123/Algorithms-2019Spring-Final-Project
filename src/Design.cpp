@@ -3,33 +3,22 @@
 
 
 void Design::execute(const Operation& op) {
-    switch (op.type) {
-        case M:
-            _merge(op.polygon_list);
-            break;
-        case C:
-            _clip(op.polygon_list);
-            break;
-        case SV:
-        case SH:
-        case SO:
-            _split(op.type);
-            break;
-        default: ;
-    }
+    if(op.type == "MERGE") _merge(op.polygon_list);
+    else if (op.type == "CLIPPER") _clip(op.polygon_list);
+    else _split(op.type);
 }
 
 
-void Design::_merge(const myPolygonList& polygon_list) {
+void Design::_merge(vector<bLib::bShape*> polygon_list) {
 
 }
 
 
-void Design::_clip(const myPolygonList& polygon_list) {
+void Design::_clip(vector<bLib::bShape*> polygon_list) {
 
 }
 
-void Design::_split(char type) {
+void Design::_split(string type) {
 
 }
 
