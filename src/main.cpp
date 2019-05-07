@@ -14,17 +14,18 @@ void print_usage() {
 
 
 int main(int argc, char* argv[]) {
-    if (argc != 2) {
+    if (argc != 3) {
         print_usage();
         exit(1);
     }
     Parser* parser = new Parser();
-    parser->read_input(argv[0]);
+    parser->read_input(argv[1]);
 
     Design* design = new Design();
     for (int i=0; i < parser->size(); i++) {
-        design->execute(parser->get_operation(i));
+        const Operation& op = parser->get_operation(i);
+        design->execute(op);
     }
 
-    design->write_output(argv[1]);
+    design->write_output(argv[2]);
 }
