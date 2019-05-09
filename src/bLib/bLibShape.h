@@ -44,13 +44,16 @@ public:
   void  intersection(bBox&,int&,int&,int&,int&);
   bool  isHor()          {return (dx() >= dy());}
   bool  overlaps(bBox*, bool=true);
+  std::vector<bBox*> subtract(bBox*);
   bool  isContain(const int, const int) const;
 
   // set functions
   void  set(int, int, int, int);
   void  setId(int id) {m_id = id;}
+  void print() { std::cout << "(" << x1() << "," << y1() << ") "
+                      << "(" << x2() << "," << y2() << ") " << std::endl; }
 
-protected:
+  protected:
   int   m_x1,  m_x2, m_y1,  m_y2;
   int   m_id;
 };
@@ -119,6 +122,47 @@ bBox::overlaps(bBox* box, bool flag)
           || x2() <= box->x1() || y2() <= box->y1());
 }
 //}}}
+
+inline std::vector<bBox*> 
+bBox::subtract(bBox* box)
+//{{{
+{
+    std::vector<bBox *> ret;
+    
+    // if (!overlaps(box)){
+    //     ret.push_back(this);
+    //     return ret;
+    // }
+    /*
+    -------------------------(x2, y2)
+    |          A            |
+    |                       |
+    |-----------------------|(box->y2)
+    |  B  |    box    |  C  |
+    |-----------------------|(box->y1)
+    |   box->x1     box->x2 |
+    |          D            |
+    -------------------------
+    (x1, y1)
+    */
+    bBox* A = new bBox(x1(), box->y2(), x2(), y2());
+    bBox* D = new bBox(x1(), y1(), x2(), box->y1());
+    bBox* B = new bBox(x1(), box->y1(), box->x1(), box->y2());
+    bBox* C = new bBox(box->x2(), box->y1(), x2(), box->y2());
+    if (y2() > box->y2()) {ret.push_back(A); // A
+    std::cout << "(" << A->x1() << "," << A->y1() << ") "
+                      << "(" << A->x2() << "," << A->y2() << ") " << std::endl;}
+    if (y1() < box->y1()) {ret.push_back(D); // D
+    std::cout << "(" << D->x1() << "," << D->y1() << ") "
+                      << "(" << D->x2() << "," << D->y2() << ") " << std::endl;}
+    if (x1() < box->x1()) {ret.push_back(B); // B
+    std::cout << "(" << B->x1() << "," << B->y1() << ") "
+                      << "(" << B->x2() << "," << B->y2() << ") " << std::endl;}
+    if (x2() > box->x2()) {ret.push_back(C); // C
+    std::cout << "(" << C->x1() << "," << C->y1() << ") "
+                      << "(" << C->x2() << "," << C->y2() << ") " << std::endl;}
+    return ret;
+}
 
 inline void
 bBox::intersection(bBox& pbox, int& xx1, int& yy1, int& xx2, int& yy2)
@@ -300,7 +344,7 @@ public:
 
   std::vector<bBox*>   m_realBoxes;  // rectangles after input
 
-protected:
+// protected:
   void   points2Boxes();              // given m_vpoints, generate m_realBoxes
 
   int                   m_id;

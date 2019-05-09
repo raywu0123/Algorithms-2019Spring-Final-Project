@@ -20,7 +20,7 @@ public:
     const Operation& get_operation(int);
 
     OperationNameList operation_name_list;
-private:
+// private:
     void _read_header(ifstream& input_file);
     bool _read_operation(ifstream &input_file);
 
