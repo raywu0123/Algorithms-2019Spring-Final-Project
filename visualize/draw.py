@@ -57,7 +57,7 @@ class Layout():
 
     def show_wait(self):
         cv2.imshow("Canvas", self.canvas)
-        cv2.waitKey(0)
+        cv2.waitKey(10000)
 
 '''
 OPERATION M1 M2 C1 C2 SH ;
@@ -103,3 +103,4 @@ if __name__ == "__main__":
     t = TestCase(file=str(sys.argv[1]), file_out=sys.argv[2], size=int(sys.argv[3]))
     t.read()
     t.out()
+    cv2.destroyAllWindows()

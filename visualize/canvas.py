@@ -1,4 +1,4 @@
-from Tkinter import *
+from tkinter import *
 import sys
 
 root = Tk()
@@ -52,6 +52,10 @@ class MyCanvas(Canvas):
         if c == "'e'":
             if self.operations[-1]['polys'] == [[]]:
                 print("last op ends with no polys.")
+                return
+            if len(self.operations[-1]['polys'][-1]) == 4:
+                print("add one more point.")
+                return
             # add first line
             startx, starty = self.operations[-1]['polys'][-1][:2]
             secx, secy = self.operations[-1]['polys'][-1][2:4]
