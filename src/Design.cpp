@@ -113,6 +113,7 @@ void Design::_merge(const vector<bShape*>& new_polygons) {
         _polygon_list_quick_delete(sid_to_be_erased[i]);
     }
     _maintain_polygon_indexes();
+    std::cout << "STAT| merge complete into " << num << " components." << std::endl;
 }
 
 
@@ -133,20 +134,13 @@ void Design::_polygon_list_quick_delete(int idx) {
 
 
 void Design::_clip(const vector<bShape*>& new_polygons) {
-    // vector<bShape *> to_sub_polygons;
-    // for(int i=0; i<new_polygons.size(); i++) {
-    //     bShape* shape = new_polygons[i];
-    //     shape->setId(to_sub_polygons.size());
-    //     to_sub_polygons.push_back(shape);
-    // }
 
     // Step 1: init RTree
     bLibRTree<bShape> m_rtree;
     for(int i=0; i < _polygon_list.size(); i++)
         m_rtree.insert(_polygon_list[i]);
 
-    // Step 2: build up graph
-    // Graph G(_polygon_list.size());
+    // Step 2: Subtract
     // for all polygons to sub.
     for(int i=0; i < new_polygons.size(); i++) {
         bShape* shape = new_polygons[i];
@@ -180,6 +174,8 @@ void Design::_clip(const vector<bShape*>& new_polygons) {
                 }
             }
             // update the subbed result.
+            adjshape->m_realBoxes.clear();
+            // delete adjshape->m_realBoxes;
             adjshape->m_realBoxes = newBoxes;
         }
     }
