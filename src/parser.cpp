@@ -1,6 +1,7 @@
 #include "parser.h"
 #include <fstream>
 
+using namespace std;
 
 Parser::Parser() {}
 
@@ -11,6 +12,7 @@ Parser::~Parser() {
 
 
 bool Parser::read_input(char* filename) {
+    cout << "STAT| Reading input from " << filename << endl;
     ifstream input_file;
     input_file.open(filename);
     if (!input_file.is_open()) {
@@ -20,6 +22,8 @@ bool Parser::read_input(char* filename) {
     _read_header(input_file);
     bool bb = true;
     while (bb) bb = _read_operation(input_file);
+
+    cout << "STAT| Finish reading input from " << filename << endl;
     return true;
 }
 

@@ -39,5 +39,6 @@ void Operation::add_polygon(string description) {
     vector<bBox> vBoxes;
     bool bb = PTR::polygon2Rect(vpoints, vBoxes);
     if (bb) pmyshape->setRealBoxes(vBoxes);
+    pmyshape->setId(polygon_list.size());
     polygon_list.push_back(pmyshape);
 }
