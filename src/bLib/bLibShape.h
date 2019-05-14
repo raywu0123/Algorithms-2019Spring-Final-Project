@@ -147,27 +147,27 @@ bBox::subtract(bBox* box)
     */
     if (y2() > box->y2()) {
         bBox* A = new bBox(x1(), box->y2(), x2(), y2());
-        ret.push_back(A);
-        std::cout << "(" << A->x1() << "," << A->y1() << ") "
-                  << "(" << A->x2() << "," << A->y2() << ") " << std::endl;
+        ret.push_back(A); // A
+        // std::cout << "(" << A->x1() << "," << A->y1() << ") "
+        //           << "(" << A->x2() << "," << A->y2() << ") " << std::endl;
     }
     if (y1() < box->y1()) {
         bBox* D = new bBox(x1(), y1(), x2(), box->y1());
-        ret.push_back(D);
-        std::cout << "(" << D->x1() << "," << D->y1() << ") "
-                  << "(" << D->x2() << "," << D->y2() << ") " << std::endl;
+        ret.push_back(D); // D
+        // std::cout << "(" << D->x1() << "," << D->y1() << ") "
+        //           << "(" << D->x2() << "," << D->y2() << ") " << std::endl;
     }
     if (x1() < box->x1()) {
-        bBox* B = new bBox(x1(), box->y1(), box->x1(), box->y2());
-        ret.push_back(B);
-        std::cout << "(" << B->x1() << "," << B->y1() << ") "
-                  << "(" << B->x2() << "," << B->y2() << ") " << std::endl;
+        bBox* B = new bBox(x1(), (y1() > box->y1())?y1():box->y1(), box->x1(), (y2() < box->y2())?y2():box->y2());
+        ret.push_back(B); // B
+        // std::cout << "(" << B->x1() << "," << B->y1() << ") "
+        //           << "(" << B->x2() << "," << B->y2() << ") " << std::endl;
     }
     if (x2() > box->x2()) {
-        bBox* C = new bBox(box->x2(), box->y1(), x2(), box->y2());
-        ret.push_back(C);
-        std::cout << "(" << C->x1() << "," << C->y1() << ") "
-                  << "(" << C->x2() << "," << C->y2() << ") " << std::endl;
+        bBox* C = new bBox(box->x2(), (y1() > box->y1())?y1():box->y1(), x2(), (y2() < box->y2())?y2():box->y2());
+        ret.push_back(C); // C
+        // std::cout << "(" << C->x1() << "," << C->y1() << ") "
+        //           << "(" << C->x2() << "," << C->y2() << ") " << std::endl;
     }
     return ret;
 }

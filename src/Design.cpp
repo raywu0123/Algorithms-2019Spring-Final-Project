@@ -169,7 +169,8 @@ void Design::_clip(const vector<bShape*>& new_polygons) {
                     // if to sub, pass the subbed result(a vector) to newBoxes.
                     else{
                         std::vector<bBox*> to_append = box1->subtract(box2);
-                        newBoxes.insert(newBoxes.end(), to_append.begin(), to_append.end());
+                        if (to_append->size()>0)
+                            newBoxes.insert(newBoxes.end(), to_append.begin(), to_append.end());
                     }
                 }
             }
