@@ -25,7 +25,7 @@ public:
 
     vector<vector<int>>  m_mergeIds;  // group some bShape together
 
-// private:
+private:
     void _split(string type);
     void _merge(const vector<bLib::bShape *>& polygon_list);
     void _clip(const vector<bLib::bShape *>& polygon_list);
