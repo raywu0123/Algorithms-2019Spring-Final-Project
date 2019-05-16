@@ -134,17 +134,19 @@ void Design::_polygon_list_quick_delete(int idx) {
 
 
 void Design::_clip(const vector<bShape*>& new_polygons) {
-
+    unsigned num = new_polygons.size();
+    vector<int> sid_to_be_erased;
+    vector<int> sid_to_be_sweep;
     // Step 1: init RTree
     bLibRTree<bShape> m_rtree;
     for(int i=0; i < _polygon_list.size(); i++)
         m_rtree.insert(_polygon_list[i]);
 
     // Step 2: Subtract
-    // for all polygons to sub.
-    for(int i=0; i < new_polygons.size(); i++) {
-        bShape* shape = new_polygons[i];
-        int id1 = shape->getId(); // assert(id1 == i);
+    // for all input polygons to sub.
+    for(int idx=0; idx < new_polygons.size(); idx++) {
+        bShape* shape = new_polygons[idx];
+        int id1 = shape->getId(); // assert(id1 == idx);
         m_rtree.search(
             shape->x1(),
             shape->y1(),
@@ -152,10 +154,11 @@ void Design::_clip(const vector<bShape*>& new_polygons) {
             shape->y2());
         int size = bLibRTree<bShape>::s_searchResult.size();
         // for all related polygons.
-        for(int j=0; j<size; j++) {
-            bShape* adjshape = bLibRTree<bShape>::s_searchResult[j];
+        for(int jdx=0; jdx<size; jdx++) {
+            bShape* adjshape = bLibRTree<bShape>::s_searchResult[jdx];
+            sid_to_be_erased.push_back(adjshape->getId());
             // int id2 = adjshape->getId(); if(id1 == id2) continue;
-            
+
             bool bconnect = false;
             std::vector<bBox*> newBoxes;
             // for all boxes in one related polygon.
@@ -177,10 +180,129 @@ void Design::_clip(const vector<bShape*>& new_polygons) {
             // update the subbed result.
             adjshape->m_realBoxes.clear();
             // delete adjshape->m_realBoxes;
-            adjshape->m_realBoxes = newBoxes;
+            adjshape->m_realBoxes.insert(adjshape->m_realBoxes.end(), newBoxes.begin(), newBoxes.end());
         }
     }
-    // _merge(vector<bShape*>());
+    // TODO
+    vector<bLib::bShape *> polygon_list_to_append;
+    for(int idx=0; idx<sid_to_be_erased.size(); idx++) {
+        bShape *curshape = _polygon_list[sid_to_be_erased[idx]];
+        if (curshape->m_realBoxes.size() == 0){
+            continue;
+        }
+        else if(curshape->m_realBoxes.size() == 1){
+            polygon_list_to_append.push_back(curshape);
+            continue;
+        }
+
+        // Sub-Step 1: init RTree for remained polygon piece of one polygon
+        bLibRTree<bBox> box_rtree;
+        for (int j = 0; j < curshape->m_realBoxes.size(); j++)
+        {
+            curshape->m_realBoxes[j]->setId(j);
+            box_rtree.insert(curshape->m_realBoxes[j]);
+            }
+            // Sub-Step 2: build up graph for all boxes.
+            Graph G(curshape->m_realBoxes.size());
+            for(int i=0; i < curshape->m_realBoxes.size(); i++) {
+                bBox* box1 = curshape->m_realBoxes[i];
+                int id1 = curshape->m_realBoxes[i]->getId(); assert(id1 == i);
+                m_rtree.search(
+                    box1->x1(),
+                    box1->y1(),
+                    box1->x2(),
+                    box1->y2());
+                int size = bLibRTree<bBox>::s_searchResult.size();
+                for(int j=0; j<size; j++) {
+                    bBox* box2 = bLibRTree<bBox>::s_searchResult[j];
+                    int id2 = box2->getId(); if(id1 == id2) continue;
+                    if (box1->overlaps(box2, true)) add_edge(id1, id2, G);
+                }
+            }
+            // Sub-Step 3: ICC for boxes
+            vector<int> component(num_vertices(G));
+            int num_boxes_group = connected_components(G, &component[0]);
+            m_mergeIds.clear(); m_mergeIds.resize(num_boxes_group);
+            for(int i=0; i < curshape->m_realBoxes.size(); i++) {
+                m_mergeIds[component[i]].push_back(i);
+            }
+            // Sub-Step 4: merge boxes by boost & update _polygon_list
+            // for each group to merge
+            for(int i=0; i<m_mergeIds.size(); i++) {
+                std::cout << "\n==> " << i << "-th merge group" << std::endl;
+                if (m_mergeIds[i].size()==0){
+                    continue;
+                } else if (m_mergeIds[i].size()==1){
+                    bBox *poabox = curshape->m_realBoxes[m_mergeIds[i][0]];
+                    bShape *new_pmyshape = new bShape(poabox->x1(),
+                                                    poabox->y1(),
+                                                    poabox->x2(),
+                                                    poabox->y2());
+                    new_pmyshape->setRealBoxes(vector<bBox>({*poabox}));
+                    new_pmyshape->setPoints(vector<bPoint>({bPoint(poabox->x1(), poabox->y1()),
+                                                            bPoint(poabox->x2(), poabox->y1()),
+                                                            bPoint(poabox->x2(), poabox->y2()),
+                                                            bPoint(poabox->x1(), poabox->y2())}));
+                    polygon_list_to_append.push_back(new_pmyshape);
+                    continue;
+                }
+                gtl::property_merge_90<int, int> pm;
+                // for each box in merge group, insert it into pm.
+                for(int j=0; j<m_mergeIds[i].size(); j++) {
+                    int sid = m_mergeIds[i][j];
+                    bBox* poabox = curshape->m_realBoxes[sid]; // pick out one boxes
+                    poabox->print();
+                    pm.insert(
+                        gtl::rectangle_data<int>(
+                            poabox->x1(),
+                            poabox->y1(),
+                            poabox->x2(),
+                            poabox->y2()),
+                        0);
+                }
+                map< set<int>, gtl::polygon_90_set_data<int> > result;
+                pm.merge(result);
+                set<int> settmp; settmp.insert(0);
+                map< set<int>, gtl::polygon_90_set_data<int> >::iterator itr = result.find(settmp);
+                gtl::polygon_90_set_data<int> polyset = itr->second;
+                vector<Polygon> output;
+                polyset.get_polygons(output);
+                Polygon& poly = output[0];
+                if (poly.size()==0) continue;
+
+                vector<bPoint> vpoints;
+                int xl = INT_MAX, yl = INT_MAX;
+                int xh = INT_MIN, yh = INT_MIN;
+                Polygon::iterator_type poly_itr = poly.begin(), poly_end = poly.end();
+                for(; poly_itr != poly_end; poly_itr++) {
+                    int x = gtl::x(*poly_itr);
+                    int y = gtl::y(*poly_itr);
+                    std::cout << "vpoint: " << x << ", " << y << std::endl;
+                    vpoints.push_back(bPoint(x, y));
+                    if (xl > x) xl = x;
+                    if (yl > y) yl = y;
+                    if (xh < x) xh = x;
+                    if (yh < y) yh = y;
+                }
+                bShape* new_pmyshape = new bShape(xl, yl, xh, yh);
+                new_pmyshape->setPoints(vpoints);
+                vector<bBox> vBoxes;
+                bool bb = PTR::polygon2Rect(vpoints, vBoxes);
+                std::cout << "size of " << i << "-th merge group of RealBoxes: " << vBoxes.size() << std::endl;
+                for(int jj = 0; jj<vBoxes.size(); jj++) vBoxes[jj].print();
+                std::cout << "<=== " << i << "-th merge group" << std::endl;
+                if (bb) new_pmyshape->setRealBoxes(vBoxes);
+                polygon_list_to_append.push_back(new_pmyshape);
+            }
+    }
+    for (int i=0; i < polygon_list_to_append.size(); i++)
+        _polygon_list.push_back(polygon_list_to_append[i]);
+    for(int i=0; i<sid_to_be_erased.size(); i++) {
+        _polygon_list_quick_delete(sid_to_be_erased[i]);
+    }
+    _maintain_polygon_indexes();
+    _merge(vector<bShape *>());
+    std::cout << "STAT| clip " << num << " polygons from the layout." << std::endl;
 }
 
 void Design::_split(string type) {
