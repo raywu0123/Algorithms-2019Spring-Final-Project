@@ -26,7 +26,7 @@ Visualize
 3. 畫好了接著按"c"開始畫C1的polygons，可以畫不止一個
 4. 重複2. 3. 直到畫完直接關掉視窗，檔案就會寫入了
 
-![](https://i.imgur.com/Pkv422h.jpg)
+![](https://i.imgur.com/fTUwZgU.jpg)
 
 ## [draw_tk.py](https://github.com/raywu0123/Algorithms-2019Spring-Final-Project/blob/master/visualize/draw_tk.py)
 
