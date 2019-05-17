@@ -24,6 +24,7 @@ int main(int argc, char* argv[]) {
     Design* design = new Design();
     for (int i=0; i < parser->size(); i++) {
         const Operation& op = parser->get_operation(i);
+        cout << "STAT| Executing " << op.name << endl;
         design->execute(op);
     }
 
