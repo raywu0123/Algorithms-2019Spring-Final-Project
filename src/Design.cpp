@@ -60,9 +60,9 @@ void Design::_merge(const vector<bShape*>& new_polygons) {
     }
 
     // Step 4: merge by boost & update _polygon_list
-    gtl::property_merge_90<int, int> pm;
     vector<int> sid_to_be_erased;
     for(int i=0; i<m_mergeIds.size(); i++) {
+        gtl::property_merge_90<int, int> pm;
         for(int j=0; j<m_mergeIds[i].size(); j++) {
             int sid = m_mergeIds[i][j];
             bShape* pmyshape = _polygon_list[sid];
