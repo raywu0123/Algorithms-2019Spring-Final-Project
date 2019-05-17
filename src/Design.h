@@ -1,6 +1,8 @@
 #ifndef  _DESIGN_H_
 #define _DESIGN_H_
 
+#include <vector>
+#include <algorithm>
 #include <boost/config.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/connected_components.hpp>
@@ -10,8 +12,6 @@ using namespace boost::polygon::operators;
 
 typedef boost::adjacency_list <boost::vecS, boost::vecS, boost::undirectedS> Graph;
 typedef gtl::polygon_data<int> Polygon;
-typedef gtl::rectangle_data<int> Rectangle;
-typedef gtl::point_data<int> Point;
 
 #include "parser.h"
 #include "bLib/bLibRTree.h"
@@ -30,7 +30,7 @@ private:
     void _merge(const vector<bLib::bShape *>& polygon_list);
     void _clip(const vector<bLib::bShape *>& polygon_list);
     void _maintain_polygon_indexes();
-    void _polygon_list_quick_delete(int);
+    void _polygon_list_quick_delete(const vector<int>&);
 
     vector<bLib::bShape*> _polygon_list;
 
