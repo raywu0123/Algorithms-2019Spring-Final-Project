@@ -60,9 +60,11 @@ void Design::_merge(const vector<bShape*>& new_polygons) {
     }
 
     // Step 4: merge by boost & update _polygon_list
-    gtl::property_merge_90<int, int> pm;
     vector<int> sid_to_be_erased;
     for(int i=0; i<m_mergeIds.size(); i++) {
+        if(m_mergeIds[i].empty()) continue;
+
+        gtl::property_merge_90<int, int> pm;
         for(int j=0; j<m_mergeIds[i].size(); j++) {
             int sid = m_mergeIds[i][j];
             bShape* pmyshape = _polygon_list[sid];
@@ -109,9 +111,7 @@ void Design::_merge(const vector<bShape*>& new_polygons) {
         _polygon_list.push_back(pmyshape);
     }
 
-    for(int i=0; i<sid_to_be_erased.size(); i++) {
-        _polygon_list_quick_delete(sid_to_be_erased[i]);
-    }
+    _polygon_list_quick_delete(sid_to_be_erased);
     _maintain_polygon_indexes();
     std::cout << "STAT| merge complete into " << num << " components." << std::endl;
 }
@@ -125,11 +125,15 @@ void Design::_maintain_polygon_indexes() {
 }
 
 
-void Design::_polygon_list_quick_delete(int idx) {
-    if (idx >= _polygon_list.size())
-        return;
-    _polygon_list[idx] = _polygon_list.back();
-    _polygon_list.pop_back();
+void Design::_polygon_list_quick_delete(const vector<int>& indexes_to_be_erased) {
+    for(int i=0; i<indexes_to_be_erased.size(); i++) {
+        delete _polygon_list[indexes_to_be_erased[i]];
+        _polygon_list[indexes_to_be_erased[i]] = nullptr;
+    }
+    _polygon_list.erase(
+            std::remove(_polygon_list.begin(), _polygon_list.end(), nullptr),
+            _polygon_list.end()
+            );
 }
 
 
