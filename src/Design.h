@@ -30,6 +30,7 @@ private:
     void _merge(const vector<bLib::bShape *>& polygon_list);
     void _clip(const vector<bLib::bShape *>& polygon_list);
     void _maintain_vpoints();
+    bool _boxes2vpoints(bLib::bShape* &, vector<bLib::bShape *>&);
     void _maintain_polygon_indexes();
     void _polygon_list_quick_delete(const vector<int>&);
 

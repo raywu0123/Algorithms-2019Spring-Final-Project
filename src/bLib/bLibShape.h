@@ -342,7 +342,8 @@ public:
   int    getPointX(int);
   int    getPointY(int);
   int    getArea();
-  std::vector<bPoint> const& getVPoints() const {return m_vpoints;}
+  bool  to_update_vpoints = false;
+  std::vector<bPoint> const &getVPoints() const { return m_vpoints; }
 
   // ==== set functions
   void   setId(int id)    {m_id = id;}
