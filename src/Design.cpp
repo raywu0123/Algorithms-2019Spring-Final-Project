@@ -135,8 +135,7 @@ void Design::_polygon_list_quick_delete(int idx) {
 
 void Design::_clip(const vector<bShape*>& new_polygons) {
     unsigned num = new_polygons.size();
-    vector<int> sid_to_be_erased;
-    vector<int> sid_to_be_sweep;
+    vector<int> sid_to_be_update;
     // Step 1: init RTree
     bLibRTree<bShape> m_rtree;
     for(int i=0; i < _polygon_list.size(); i++)
@@ -156,7 +155,7 @@ void Design::_clip(const vector<bShape*>& new_polygons) {
         // for all related polygons.
         for(int jdx=0; jdx<size; jdx++) {
             bShape* adjshape = bLibRTree<bShape>::s_searchResult[jdx];
-            sid_to_be_erased.push_back(adjshape->getId());
+            sid_to_be_update.push_back(adjshape->getId());
             // int id2 = adjshape->getId(); if(id1 == id2) continue;
 
             bool bconnect = false;
@@ -180,21 +179,37 @@ void Design::_clip(const vector<bShape*>& new_polygons) {
             // update the subbed result.
             adjshape->m_realBoxes.clear();
             // delete adjshape->m_realBoxes;
-            adjshape->m_realBoxes.insert(adjshape->m_realBoxes.end(), newBoxes.begin(), newBoxes.end());
+            if (newBoxes.size()>0)
+                adjshape->m_realBoxes.insert(adjshape->m_realBoxes.end(), newBoxes.begin(), newBoxes.end());
         }
     }
+    
+    _maintain_polygon_indexes();
+    std::cout << "STAT| clip " << num << " polygons from the layout." << std::endl;
+}
+
+void Design::_split(string type) {
     // TODO
+
+    vector<int> sid_to_be_erased;
     vector<bLib::bShape *> polygon_list_to_append;
-    for(int idx=0; idx<sid_to_be_erased.size(); idx++) {
-        bShape *curshape = _polygon_list[sid_to_be_erased[idx]];
+    for(int idx=0; idx<_polygon_list.size(); idx++) {
+        bShape *curshape = _polygon_list[idx];
         if (curshape->m_realBoxes.size() == 0){
+            sid_to_be_erased.push_back(idx);
             continue;
         }
         else if(curshape->m_realBoxes.size() == 1){
-            polygon_list_to_append.push_back(curshape);
+            // polygon_list_to_append.push_back(curshape);
+            continue;
+        }else if(curshape->m_realBoxes.size() == 2 &&
+            curshape->m_realBoxes[0]->overlaps(curshape->m_realBoxes[1], true)){
+            // polygon_list_to_append.push_back(curshape);
             continue;
         }
-
+        std::cout << "invalid with " << curshape->m_realBoxes.size() << " boxes." << std::endl;
+        // polygon_list_to_append.push_back(curshape);
+        // continue;
         // Sub-Step 1: init RTree for remained polygon piece of one polygon
         bLibRTree<bBox> box_rtree;
         for (int j = 0; j < curshape->m_realBoxes.size(); j++)
@@ -207,7 +222,7 @@ void Design::_clip(const vector<bShape*>& new_polygons) {
             for(int i=0; i < curshape->m_realBoxes.size(); i++) {
                 bBox* box1 = curshape->m_realBoxes[i];
                 int id1 = curshape->m_realBoxes[i]->getId(); assert(id1 == i);
-                m_rtree.search(
+                box_rtree.search(
                     box1->x1(),
                     box1->y1(),
                     box1->x2(),
@@ -222,6 +237,10 @@ void Design::_clip(const vector<bShape*>& new_polygons) {
             // Sub-Step 3: ICC for boxes
             vector<int> component(num_vertices(G));
             int num_boxes_group = connected_components(G, &component[0]);
+            if (num_boxes_group==1) {
+                polygon_list_to_append.push_back(curshape);
+                continue;
+            }
             m_mergeIds.clear(); m_mergeIds.resize(num_boxes_group);
             for(int i=0; i < curshape->m_realBoxes.size(); i++) {
                 m_mergeIds[component[i]].push_back(i);
@@ -300,13 +319,6 @@ void Design::_clip(const vector<bShape*>& new_polygons) {
     for(int i=0; i<sid_to_be_erased.size(); i++) {
         _polygon_list_quick_delete(sid_to_be_erased[i]);
     }
-    _maintain_polygon_indexes();
-    _merge(vector<bShape *>());
-    std::cout << "STAT| clip " << num << " polygons from the layout." << std::endl;
-}
-
-void Design::_split(string type) {
-
 }
 
 
