@@ -36,6 +36,7 @@ class MyCanvas(Canvas):
         self.file_out = open(file_out, 'r')
         self.riter = self.read()
         self.oiter = self.out()
+        self.c = False
 
     def key(self, event):
         c = repr(event.char)
@@ -49,9 +50,11 @@ class MyCanvas(Canvas):
         if c == "'w'":
             try:
                 line = next(self.oiter)
-                self.draw_line_rect(line)
+                self.draw_line_rect(line, c=self.c)
+                self.c = not self.c
             except:
                 c = "'e'"
+                # pass
         if c == "'e'":
             sys.exit()
         
@@ -80,9 +83,15 @@ class MyCanvas(Canvas):
             assert spt[0] == "RECT"
             print(line)
             yield line
+            yield line
             # self.draw_line_rect(line)
             # time.sleep(1)
             # self.show_wait()
+
+    # def scaling(xy):
+    #     ret = (xy[0] // self.scale, xy[1] // self.scale)
+    #     print("lll: ", ret)
+    #     return ret
 
     def get_color(self):
         return colors[self.idx % len(colors)]
@@ -92,8 +101,11 @@ class MyCanvas(Canvas):
         # pts = pts.reshape((-1,1,2))
         self.create_polygon([x for y in coords for x in y], fill=self.get_color(), outline="#000000")
 
-    def draw_rect(self, coords):
-        self.create_rectangle(*[x for y in coords for x in y], fill=self.get_color(), outline="#000000")
+    def draw_rect(self, coords, c=False):
+        if c:
+            self.create_rectangle(*[x for y in coords for x in y], fill="#FFFFFF", outline="#FFFFFF")
+        else:
+            self.create_rectangle(*[x for y in coords for x in y], fill=self.get_color(), outline="#000000")
 
     def draw_line(self, text="POLYGON 131880 539700 137900 539700 137900 541100 131880 541100 131880 539700 ;"):
         print(text)
@@ -107,21 +119,14 @@ class MyCanvas(Canvas):
         print(coords)
         self.draw_poly(coords)
 
-    def draw_line_rect(self, text="RECT 50 100 200 200 ;"):
+    def draw_line_rect(self, text="RECT 50 100 200 200 ;", c=False):
         vertices = text.split(' ')
         assert vertices[0] in "RECT"
         vertices = vertices[1:-1]
         assert len(vertices)%2 == 0 
         coords = [(int(vertices[2 * i]), int(vertices[2 * i + 1])) for i in range(len(vertices) // 2)]
         print(coords)
-        self.draw_rect(coords)
-
-    def show_wait(self):
-        print("fuck")
-        pass
-        # while not self.keypress:
-        # time.sleep(1)
-        # self.keypress = False
+        self.draw_rect(coords, c)
 
 '''
 OPERATION M1 M2 C1 C2 SH ;
