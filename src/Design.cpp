@@ -89,7 +89,7 @@ void Design::_merge(const vector<bShape*>& new_polygons) {
         pm.merge(result);
         set<int> settmp; settmp.insert(0);
         map< set<int>, gtl::polygon_90_set_data<int> >::iterator itr = result.find(settmp);
-        gtl::polygon_90_set_data<int> polyset = itr->second;
+        const gtl::polygon_90_set_data<int>& polyset = itr->second;
         vector<Polygon> output;
         polyset.get_polygons(output);
         Polygon& poly = output[0];
@@ -107,12 +107,23 @@ void Design::_merge(const vector<bShape*>& new_polygons) {
             if (xh < x) xh = x;
             if (yh < y) yh = y;
         }
+
         bShape* pmyshape = new bShape(xl, yl, xh, yh);
         pmyshape->setPoints(vpoints);
+
+        vector<Polygon> rectangles;
+        polyset.get_rectangles(rectangles);
         vector<bBox> vBoxes;
-        bool bb = PTR::polygon2Rect(vpoints, vBoxes);
-        assert (vBoxes.size()>0);
-        if (bb) pmyshape->setRealBoxes(vBoxes);
+        for(int r=0; r<rectangles.size(); r++) {
+            vBoxes.push_back(bBox(
+                rectangles[r].coords_[0].x(),
+                rectangles[r].coords_[0].y(),
+                rectangles[r].coords_[2].x(),
+                rectangles[r].coords_[2].y()
+            ));
+        }
+        assert(not vBoxes.empty());
+        pmyshape->setRealBoxes(vBoxes);
         _polygon_list.push_back(pmyshape);
     }
 
@@ -126,7 +137,6 @@ void Design::_merge(const vector<bShape*>& new_polygons) {
             cout << *_polygon_list[i] << std::endl;
 
         }
-        // assert (_polygon_list[i]->m_realBoxes.size() > 0);
     }
 }
 
@@ -309,12 +319,22 @@ bool Design::_boxes2vpoints(bShape* &curshape, vector<bShape *>& result_to_appen
             }
             new_pmyshape = new bShape(xl, yl, xh, yh);
             new_pmyshape->setPoints(vpoints);
+
+            vector<Polygon> rectangles;
+            polyset.get_rectangles(rectangles);
             vector<bBox> vBoxes;
-            bool bb = PTR::polygon2Rect(vpoints, vBoxes);
+            for(int r=0; r<rectangles.size(); r++) {
+                vBoxes.push_back(bBox(
+                        rectangles[r].coords_[0].x(),
+                        rectangles[r].coords_[0].y(),
+                        rectangles[r].coords_[2].x(),
+                        rectangles[r].coords_[2].y()
+                ));
+            }
             // std::cout << "size of " << i << "-th merge group of RealBoxes: " << vBoxes.size() << std::endl;
             // for(int jj = 0; jj<vBoxes.size(); jj++) vBoxes[jj].print();
             // std::cout << "<=== " << i << "-th merge group\n" << std::endl;
-            if (bb) new_pmyshape->setRealBoxes(vBoxes);
+            new_pmyshape->setRealBoxes(vBoxes);
         }
         if (m_mergeIds.size() == 1){
             // delete curshape;
