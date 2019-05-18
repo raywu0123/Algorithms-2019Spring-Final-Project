@@ -14,7 +14,6 @@ void Design::execute(const Operation& op) {
 
 void Design::_merge(const vector<bShape*>& new_polygons) {
     for(int i=0; i<new_polygons.size(); i++) {
-        assert (new_polygons[i]->m_realBoxes.size() > 0);
         bShape* shape = new_polygons[i];
         shape->setId(_polygon_list.size());
         _polygon_list.push_back(shape);
@@ -22,10 +21,8 @@ void Design::_merge(const vector<bShape*>& new_polygons) {
 
     // Step 1: init RTree
     bLibRTree<bShape> m_rtree;
-    for(int i=0; i < _polygon_list.size(); i++){
-        assert (_polygon_list[i]->m_realBoxes.size() > 0);
+    for(int i=0; i < _polygon_list.size(); i++)
         m_rtree.insert(_polygon_list[i]);
-    }
 
     // Step 2: build up graph
     Graph G(_polygon_list.size());
@@ -125,7 +122,7 @@ void Design::_merge(const vector<bShape*>& new_polygons) {
     std::cout << "STAT| merge complete into " << num << " components." << std::endl;
     for (int i = 0; i < _polygon_list.size();i++){
         if (not _polygon_list[i]->m_realBoxes.size() > 0){
-            cout << "sid: " << i << std::endl;
+            cout << "PID: " << i << std::endl;
             cout << *_polygon_list[i] << std::endl;
 
         }

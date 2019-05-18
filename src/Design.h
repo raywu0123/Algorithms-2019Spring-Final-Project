@@ -7,6 +7,7 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/connected_components.hpp>
 #include <boost/polygon/polygon.hpp>
+#include <boost/polygon/polygon_90_set_data.hpp>
 namespace gtl = boost::polygon;
 using namespace boost::polygon::operators;
 
