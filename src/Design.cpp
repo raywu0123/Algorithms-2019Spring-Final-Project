@@ -115,6 +115,7 @@ void Design::_merge(const vector<bShape*>& new_polygons) {
 
     _polygon_list_quick_delete(sid_to_be_erased);
     _maintain_polygon_indexes();
+    std::cout << std::endl;
     std::cout << "STAT| merge complete into " << num << " components." << std::endl;
 }
 
@@ -177,17 +178,24 @@ void Design::_clip(const vector<bShape*>& new_polygons) {
                         std::vector<bBox*> to_append = box1->subtract(box2);
                         if (to_append.size()>0)
                             newBoxes.insert(newBoxes.end(), to_append.begin(), to_append.end());
+                        delete box1;
                     }
                 }
             }
             // update the subbed result.
+            // for (int i = 0; i < adjshape->m_realBoxes.size();i++)
+            //     delete adjshape->m_realBoxes[i];
             adjshape->m_realBoxes.clear();
+            adjshape->m_realBoxes.shrink_to_fit();
+            // vector<bBox*>().swap(adjshape->m_realBoxes);
             // delete adjshape->m_realBoxes;
-            adjshape->m_realBoxes = newBoxes;
+            if (newBoxes.size()>0)
+                adjshape->m_realBoxes.insert(adjshape->m_realBoxes.end(), newBoxes.begin(), newBoxes.end());
+            // adjshape->m_realBoxes = newBoxes;
             adjshape->to_update_vpoints = true;
         }
     }
-    // _merge(vector<bShape*>());
+    _maintain_vpoints();
 }
 
 // return true means `curshape` is not broke into piece, we just modify it, so keep it in _polygon_list.
@@ -310,7 +318,11 @@ void Design::_maintain_vpoints(){
     vector<int> sid_to_be_erased;
     for(int idx=0; idx<_polygon_list.size(); idx++) {
         if (_polygon_list[idx]->to_update_vpoints == true){
-            if (!_boxes2vpoints(_polygon_list[idx], polygon_list_to_append))
+            if (_polygon_list[idx]==0)
+                sid_to_be_erased.push_back(idx);
+            else if (_polygon_list[idx]->m_realBoxes.size()==0)
+                sid_to_be_erased.push_back(idx);
+            else if (!_boxes2vpoints(_polygon_list[idx], polygon_list_to_append))
                 sid_to_be_erased.push_back(idx);
             _polygon_list[idx]->to_update_vpoints = false;
         }
@@ -318,6 +330,7 @@ void Design::_maintain_vpoints(){
     for (int i=0; i < polygon_list_to_append.size(); i++)
         _polygon_list.push_back(polygon_list_to_append[i]);
     _polygon_list_quick_delete(sid_to_be_erased);
+    _maintain_polygon_indexes();
 }
 
 void Design::_split(string type) {

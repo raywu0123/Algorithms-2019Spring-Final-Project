@@ -20,7 +20,7 @@ typedef gtl::polygon_data<int> Polygon;
 
 class Design {
 public:
-    void execute(const Operation&);
+    void execute(const Operation &);
     void write_output(char*);
 
     vector<vector<int>>  m_mergeIds;  // group some bShape together
