@@ -331,10 +331,13 @@ void Design::_maintain_vpoints(){
     vector<bLib::bShape *> polygon_list_to_append;
     vector<int> sid_to_be_erased;
     for(int idx=0; idx<_polygon_list.size(); idx++) {
+        // assert (_polygon_list[idx]->m_realBoxes.size()==1 && _polygon_list[idx]->m_realBoxes[0]->getArea()>0);
         if (_polygon_list[idx]->to_update_vpoints == true){
             if (_polygon_list[idx]==0)
                 sid_to_be_erased.push_back(idx);
             else if (_polygon_list[idx]->m_realBoxes.size()==0)
+                sid_to_be_erased.push_back(idx);
+            else if (_polygon_list[idx]->m_realBoxes.size()==1 && _polygon_list[idx]->m_realBoxes[0]->getArea()==0)
                 sid_to_be_erased.push_back(idx);
             else if (!_boxes2vpoints(_polygon_list[idx], polygon_list_to_append))
                 sid_to_be_erased.push_back(idx);
