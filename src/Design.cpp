@@ -70,7 +70,6 @@ void Design::_merge(const vector<bShape*>& new_polygons) {
         for(int j=0; j<m_mergeIds[i].size(); j++) {
             int sid = m_mergeIds[i][j];
             bShape* pmyshape = _polygon_list[sid];
-            if (_polygon_list[sid]->m_realBoxes.size() == 0) std::cout << "SID: " << sid << std::endl;
             assert (_polygon_list[sid]->m_realBoxes.size() > 0);
             for(int k=0; k<pmyshape->m_realBoxes.size(); k++) {
                 bBox* poabox = pmyshape->m_realBoxes[k];
@@ -131,13 +130,6 @@ void Design::_merge(const vector<bShape*>& new_polygons) {
     _maintain_polygon_indexes();
     std::cout << std::endl;
     std::cout << "STAT| merge complete into " << num << " components." << std::endl;
-    for (int i = 0; i < _polygon_list.size();i++){
-        if (not _polygon_list[i]->m_realBoxes.size() > 0){
-            cout << "PID: " << i << std::endl;
-            cout << *_polygon_list[i] << std::endl;
-
-        }
-    }
 }
 
 
@@ -167,10 +159,7 @@ void Design::_clip(const vector<bShape*>& new_polygons) {
     bLibRTree<bShape> m_rtree;
     for(int i=0; i < _polygon_list.size(); i++){
         // assert(_polygon_list[i]->m_realBoxes.size() > 0);
-        if (_polygon_list[i]->m_realBoxes.size() == 0){
-            _polygon_list[i]->to_update_vpoints = true;
-        }
-        else m_rtree.insert(_polygon_list[i]);
+        m_rtree.insert(_polygon_list[i]);
     }
 
     // Step 2: Subtract
@@ -187,7 +176,6 @@ void Design::_clip(const vector<bShape*>& new_polygons) {
         // for all related polygons.
         for(int j=0; j<size; j++) {
             bShape* adjshape = bLibRTree<bShape>::s_searchResult[j];
-            // int id2 = adjshape->getId(); if(id1 == id2) continue;
             
             std::vector<bBox*> newBoxes;
             // for all boxes in one related polygon.
@@ -208,15 +196,10 @@ void Design::_clip(const vector<bShape*>& new_polygons) {
                 }
             }
             // update the subbed result.
-            // for (int i = 0; i < adjshape->m_realBoxes.size();i++)
-            //     delete adjshape->m_realBoxes[i];
             adjshape->m_realBoxes.clear();
             adjshape->m_realBoxes.shrink_to_fit();
-            // vector<bBox*>().swap(adjshape->m_realBoxes);
-            // delete adjshape->m_realBoxes;
             if (newBoxes.size()>0)
                 adjshape->m_realBoxes.insert(adjshape->m_realBoxes.end(), newBoxes.begin(), newBoxes.end());
-            // adjshape->m_realBoxes = newBoxes;
             adjshape->to_update_vpoints = true;
         }
     }
@@ -286,7 +269,6 @@ bool Design::_boxes2vpoints(bShape* &curshape, vector<bShape *>& result_to_appen
             for(int j=0; j<m_mergeIds[i].size(); j++) {
                 int sid = m_mergeIds[i][j];
                 bBox* poabox = curshape->m_realBoxes[sid]; // pick out one boxes
-                // poabox->print();
                 pm.insert(
                     gtl::rectangle_data<int>(
                         poabox->x1(),
@@ -331,9 +313,6 @@ bool Design::_boxes2vpoints(bShape* &curshape, vector<bShape *>& result_to_appen
                         rectangles[r].coords_[2].y()
                 ));
             }
-            // std::cout << "size of " << i << "-th merge group of RealBoxes: " << vBoxes.size() << std::endl;
-            // for(int jj = 0; jj<vBoxes.size(); jj++) vBoxes[jj].print();
-            // std::cout << "<=== " << i << "-th merge group\n" << std::endl;
             new_pmyshape->setRealBoxes(vBoxes);
         }
         if (m_mergeIds.size() == 1){
