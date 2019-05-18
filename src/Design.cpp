@@ -14,6 +14,7 @@ void Design::execute(const Operation& op) {
 
 void Design::_merge(const vector<bShape*>& new_polygons) {
     for(int i=0; i<new_polygons.size(); i++) {
+        assert (new_polygons[i]->m_realBoxes.size() > 0);
         bShape* shape = new_polygons[i];
         shape->setId(_polygon_list.size());
         _polygon_list.push_back(shape);
@@ -21,8 +22,10 @@ void Design::_merge(const vector<bShape*>& new_polygons) {
 
     // Step 1: init RTree
     bLibRTree<bShape> m_rtree;
-    for(int i=0; i < _polygon_list.size(); i++)
+    for(int i=0; i < _polygon_list.size(); i++){
+        assert (_polygon_list[i]->m_realBoxes.size() > 0);
         m_rtree.insert(_polygon_list[i]);
+    }
 
     // Step 2: build up graph
     Graph G(_polygon_list.size());
@@ -70,6 +73,8 @@ void Design::_merge(const vector<bShape*>& new_polygons) {
         for(int j=0; j<m_mergeIds[i].size(); j++) {
             int sid = m_mergeIds[i][j];
             bShape* pmyshape = _polygon_list[sid];
+            if (_polygon_list[sid]->m_realBoxes.size() == 0) std::cout << "SID: " << sid << std::endl;
+            assert (_polygon_list[sid]->m_realBoxes.size() > 0);
             for(int k=0; k<pmyshape->m_realBoxes.size(); k++) {
                 bBox* poabox = pmyshape->m_realBoxes[k];
                 pm.insert(
@@ -109,6 +114,7 @@ void Design::_merge(const vector<bShape*>& new_polygons) {
         pmyshape->setPoints(vpoints);
         vector<bBox> vBoxes;
         bool bb = PTR::polygon2Rect(vpoints, vBoxes);
+        assert (vBoxes.size()>0);
         if (bb) pmyshape->setRealBoxes(vBoxes);
         _polygon_list.push_back(pmyshape);
     }
@@ -117,6 +123,14 @@ void Design::_merge(const vector<bShape*>& new_polygons) {
     _maintain_polygon_indexes();
     std::cout << std::endl;
     std::cout << "STAT| merge complete into " << num << " components." << std::endl;
+    for (int i = 0; i < _polygon_list.size();i++){
+        if (not _polygon_list[i]->m_realBoxes.size() > 0){
+            cout << "sid: " << i << std::endl;
+            cout << *_polygon_list[i] << std::endl;
+
+        }
+        // assert (_polygon_list[i]->m_realBoxes.size() > 0);
+    }
 }
 
 
@@ -144,8 +158,13 @@ void Design::_clip(const vector<bShape*>& new_polygons) {
 
     // Step 1: init RTree
     bLibRTree<bShape> m_rtree;
-    for(int i=0; i < _polygon_list.size(); i++)
-        m_rtree.insert(_polygon_list[i]);
+    for(int i=0; i < _polygon_list.size(); i++){
+        // assert(_polygon_list[i]->m_realBoxes.size() > 0);
+        if (_polygon_list[i]->m_realBoxes.size() == 0){
+            _polygon_list[i]->to_update_vpoints = true;
+        }
+        else m_rtree.insert(_polygon_list[i]);
+    }
 
     // Step 2: Subtract
     // for all polygons to sub.
@@ -163,7 +182,6 @@ void Design::_clip(const vector<bShape*>& new_polygons) {
             bShape* adjshape = bLibRTree<bShape>::s_searchResult[j];
             // int id2 = adjshape->getId(); if(id1 == id2) continue;
             
-            bool bconnect = false;
             std::vector<bBox*> newBoxes;
             // for all boxes in one related polygon.
             for(int l=0; l<adjshape->m_realBoxes.size(); l++){
