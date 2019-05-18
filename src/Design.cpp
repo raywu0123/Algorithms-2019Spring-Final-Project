@@ -191,7 +191,7 @@ void Design::_clip(const vector<bShape*>& new_polygons) {
 }
 
 // return true means `curshape` is not broke into piece, we just modify it, so keep it in _polygon_list.
-// return false means `curshape` is broke into piece, so discar it in _polygon_list.
+// return false means `curshape` is broke into piece, so discard it from _polygon_list.
 bool Design::_boxes2vpoints(bShape* &curshape, vector<bShape *>& result_to_append) {
     assert (curshape->m_realBoxes.size() > 0);
     if(curshape->m_realBoxes.size() == 1){
@@ -253,7 +253,7 @@ bool Design::_boxes2vpoints(bShape* &curshape, vector<bShape *>& result_to_appen
             for(int j=0; j<m_mergeIds[i].size(); j++) {
                 int sid = m_mergeIds[i][j];
                 bBox* poabox = curshape->m_realBoxes[sid]; // pick out one boxes
-                poabox->print();
+                // poabox->print();
                 pm.insert(
                     gtl::rectangle_data<int>(
                         poabox->x1(),
@@ -288,9 +288,9 @@ bool Design::_boxes2vpoints(bShape* &curshape, vector<bShape *>& result_to_appen
             new_pmyshape->setPoints(vpoints);
             vector<bBox> vBoxes;
             bool bb = PTR::polygon2Rect(vpoints, vBoxes);
-            std::cout << "size of " << i << "-th merge group of RealBoxes: " << vBoxes.size() << std::endl;
-            for(int jj = 0; jj<vBoxes.size(); jj++) vBoxes[jj].print();
-            std::cout << "<=== " << i << "-th merge group\n" << std::endl;
+            // std::cout << "size of " << i << "-th merge group of RealBoxes: " << vBoxes.size() << std::endl;
+            // for(int jj = 0; jj<vBoxes.size(); jj++) vBoxes[jj].print();
+            // std::cout << "<=== " << i << "-th merge group\n" << std::endl;
             if (bb) new_pmyshape->setRealBoxes(vBoxes);
         }
         if (m_mergeIds.size() == 1){
