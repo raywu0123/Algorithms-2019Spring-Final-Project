@@ -370,8 +370,8 @@ void Design::write_output(char* filename) {
     output_file.open(filename);
     for(int i=0; i<_polygon_list.size(); i++) {
         bShape* polygon = _polygon_list[i];
-        for(int i=0; i<polygon->m_realBoxes.size(); i++) {
-            bBox* rectangle = polygon->m_realBoxes[i];
+        for(int j=0; j<polygon->m_realBoxes.size(); j++) {
+            bBox* rectangle = polygon->m_realBoxes[j];
             output_file << "RECT "
                         << rectangle->x1() << " "
                         << rectangle->y1() << " "
