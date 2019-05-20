@@ -1,5 +1,6 @@
 #include "splitter.h"
 #include "sweep_plane.h"
+#include "MyGraph.h"
 
 namespace gtl = boost::polygon;
 
@@ -18,11 +19,18 @@ void Splitter::split(bShape* polygon) {
     HolePolygon hp = _build_graph(polygon);
 
     const vector<vector<Point>>& loops = _get_loops(hp);
+
     vector<pair<Point, Point>> H_edges, V_edges;
     _get_edges(loops, H_edges, V_edges);
+
     vector<pair<Point, Point>> concave_vertices = _get_concave_vertices(loops);
-    _get_effective_chords(concave_vertices, H_edges, V_edges);
-//    vector<bSegment> selected_effective_chords = _maximum_independent_set(effective_chords);
+
+    vector<Segment> H_effective_chords, V_effective_chords;
+    _get_effective_chords(concave_vertices, H_edges, V_edges, H_effective_chords, V_effective_chords);
+
+    vector<Segment> H_selected_chords, V_selected_chords;
+    _maximum_independent_set(H_effective_chords, V_effective_chords, H_selected_chords, V_selected_chords);
+
 //    vector<bShape*> subregions = _dissect_by_subregions(polygon, selected_effective_chords);
 //
 //    vector<bBox> boxes;
@@ -85,7 +93,6 @@ void Splitter::_get_edges(const vector<vector<Point>>& loops, vector<Segment>& h
 }
 
 
-
 vector<pair<Point, Point>> Splitter::_get_concave_vertices(const vector<vector<Point>>& loops) {
     vector<pair<Point, Point>> concave_vertices;
     vector<vector<Point>> custom_loops = loops;
@@ -107,8 +114,10 @@ vector<pair<Point, Point>> Splitter::_get_concave_vertices(const vector<vector<P
 void Splitter::_get_effective_chords(
     vector<pair<Point, Point>>& concave_vertices,
     const vector<Segment>& H_edges,
-    const vector<Segment>& V_edges
-) {
+    const vector<Segment>& V_edges,
+    vector<Segment>& H_effective_chords,
+    vector<Segment>& V_effective_chords
+    ) {
     vector<pair<Point, Point>> v_candidates;
     std::sort(concave_vertices.begin(), concave_vertices.end(), Comparator_XY);
     for(int i=0; i<concave_vertices.size() - 1; i++) {
@@ -149,7 +158,6 @@ void Splitter::_get_effective_chords(
     std::sort(events.begin(), events.end(), EventComparator);
 
     std::set<int> set;
-    vector<Segment> V_effective_chords;
     for(const auto& event : events) {
         if(event.type == START_POINT)
             set.emplace(event.segment->first.y());
@@ -158,7 +166,7 @@ void Splitter::_get_effective_chords(
         else if(event.type == PARALLEL_SEGMENT) {
             int y1 = event.segment->first.y(), y2 = event.segment->second.y();
             auto lower_it = set.lower_bound(y1 + 1);
-            auto upper_it = set.lower_bound(y2 - 1);
+            auto upper_it = set.upper_bound(y2 - 1);
             // +- 1 to prevent equal case
             if((lower_it == upper_it) or (y2 - y1) <= 1) { // no intersection
                 V_effective_chords.push_back(*event.segment);
@@ -176,16 +184,15 @@ void Splitter::_get_effective_chords(
     std::sort(events_.begin(), events_.end(), EventComparator);
 
     std::set<int> set_;
-    vector<Segment> H_effective_chords;
     for(const auto& event : events_) {
         if(event.type == START_POINT)
-            set.emplace(event.segment->first.x());
+            set_.emplace(event.segment->first.x());
         else if(event.type == END_POINT)
-            set.erase(event.segment->first.x());
+            set_.erase(event.segment->first.x());
         else if(event.type == PARALLEL_SEGMENT) {
             int x1 = event.segment->first.x(), x2 = event.segment->second.x();
-            auto lower_it = set.lower_bound(x1 + 1);
-            auto upper_it = set.lower_bound(x2 - 1);
+            auto lower_it = set_.lower_bound(x1 + 1);
+            auto upper_it = set_.upper_bound(x2 - 1);
             // +- 1 to prevent equal case
             if((lower_it == upper_it) or (x2 - x1) <= 1) { // no intersection
                 H_effective_chords.push_back(*event.segment);
@@ -194,9 +201,61 @@ void Splitter::_get_effective_chords(
     }
 }
 
-vector<bSegment> Splitter::_maximum_independent_set(vector<bSegment> effective_chords) {
-    return vector<bSegment> ();
+
+void Splitter::_maximum_independent_set(
+    const vector<Segment>& H_effective_chords,
+    const vector<Segment>& V_effective_chords,
+    vector<Segment>& H_selected_chords,
+    vector<Segment>& V_selected_chords
+    ) {
+
+    vector<Event> events;
+    map<Segment const*, int> Hsegment2idx;
+    for(int idx = 0; idx<H_effective_chords.size(); idx++) {
+        const auto& e = H_effective_chords[idx];
+        events.emplace_back(e.first.x(), CHORD_START_POINT, &e);
+        events.emplace_back(e.second.x(), CHORD_END_POINT, &e);
+        Hsegment2idx[&e] = idx;
+    }
+
+    map<Segment const*, int> Vsegment2idx;
+    for(int idx = 0; idx < V_effective_chords.size(); idx++) {
+        const auto& e = V_effective_chords[idx];
+        events.emplace_back(e.first.x(), PARALLEL_SEGMENT, &e);
+        Vsegment2idx[&e] = idx;
+    }
+    std::sort(events.begin(), events.end(), EventComparator);
+
+    multimap<int, Segment const*> map;
+    vector<pair<Segment const*, Segment const*>> intersections;
+    for(const auto& event : events) {
+        if(event.type == CHORD_START_POINT)
+            map.emplace(event.segment->first.y(), event.segment);
+        else if(event.type == CHORD_END_POINT)
+            map.erase(map.find(event.segment->first.y()));
+        else if(event.type == PARALLEL_SEGMENT) {
+            int y1 = event.segment->first.y(), y2 = event.segment->second.y();
+            auto lower_it = map.lower_bound(y1);
+            auto upper_it = map.upper_bound(y2);
+            // NO +- 1 to prevent equal case
+
+            for(auto it = lower_it; it != upper_it; ++it) {
+                intersections.emplace_back(it->second, event.segment);
+            }
+        }
+    }
+
+    BipGraph graph(H_effective_chords.size(), V_effective_chords.size());
+    for(const auto& intersection : intersections)
+        graph.addEdge(Hsegment2idx[intersection.first] + 1, Vsegment2idx[intersection.second] + 1);
+
+    graph.maximum_independent_set();
+    for(auto i: graph.U_ind)
+        H_selected_chords.push_back(H_effective_chords[i - 1]);
+    for(auto i: graph.V_ind)
+        V_selected_chords.push_back(V_effective_chords[i - 1]);
 }
+
 
 vector<bShape *> Splitter::_dissect_by_subregions(bShape* polygon, vector<bSegment> selected_effective_chords) {
     return vector<bShape*> ();

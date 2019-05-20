@@ -7,7 +7,12 @@ set(CMAKE_CXX_FLAGS "-g")
 add_library(Design Design.cpp Design.h)
 add_library(Parser parser.cpp parser.h)
 add_library(Operation Operation.cpp Operation.h)
-add_library(splitLib splitLib/splitter.cpp splitLib/splitter.h splitLib/sweep_plane.h splitLib/sweep_plane.cpp)
+add_library(
+    splitLib
+    splitLib/splitter.cpp splitLib/splitter.h
+    splitLib/sweep_plane.h
+    splitLib/MyGraph.h splitLib/MyGraph.cpp
+)
 add_library(bLib bLib/bLibShape.h bLib/bLibPtr.h)
 add_library(tqdm tqdm/tqdm.h)
 
