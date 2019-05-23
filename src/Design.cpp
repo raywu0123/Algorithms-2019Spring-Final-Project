@@ -12,13 +12,12 @@ void Design::execute(const Operation& op) {
 }
 
 
-void Design::_merge(const vector<bShape*>& new_polygons) {
+void Design::_merge(const vector<bShape*>& new_polygons, gtl::orientation_2d split_orientation, bool verbose) {
     for(int i=0; i<new_polygons.size(); i++) {
         bShape* shape = new_polygons[i];
         shape->setId(_polygon_list.size());
         _polygon_list.push_back(shape);
     }
-
     // Step 1: init RTree
     bLibRTree<bShape> m_rtree;
     for(int i=0; i < _polygon_list.size(); i++)
@@ -128,8 +127,10 @@ void Design::_merge(const vector<bShape*>& new_polygons) {
 
     _polygon_list_quick_delete(sid_to_be_erased);
     _maintain_polygon_indexes();
-    std::cout << std::endl;
-    std::cout << "STAT| merge complete into " << num << " components." << std::endl;
+    if (verbose) {
+        std::cout << std::endl;
+        std::cout << "STAT| merge complete into " << num << " components." << std::endl;
+    }
 }
 
 
@@ -166,7 +167,6 @@ void Design::_clip(const vector<bShape*>& new_polygons) {
     // for all polygons to sub.
     for(int i=0; i < new_polygons.size(); i++) {
         bShape* shape = new_polygons[i];
-        int id1 = shape->getId(); // assert(id1 == i);
         m_rtree.search(
             shape->x1(),
             shape->y1(),
@@ -348,9 +348,21 @@ void Design::_maintain_vpoints(){
 }
 
 void Design::_split(string type) {
-    _maintain_vpoints();
-    // TODO
+    if(type == "SO") _split_o();
+    else if(type == "SV") _merge(vector<bShape*>(), gtl::VERTICAL, false);
+    else if(type == "SH") _merge(vector<bShape*>(), gtl::HORIZONTAL, false);
+    else cerr << "ERR | Incorrect split type: " << type << endl;
+    cout << "STAT| Split complete." << endl;
 }
+
+
+void Design::_split_o() {
+    for(int i=0; i<_polygon_list.size(); i++) {
+        Splitter s;
+        s.split(_polygon_list[i]);
+    }
+}
+
 
 void Design::write_output(char* filename) {
     cout << "STAT| Writing output to " << filename << endl;
@@ -358,8 +370,8 @@ void Design::write_output(char* filename) {
     output_file.open(filename);
     for(int i=0; i<_polygon_list.size(); i++) {
         bShape* polygon = _polygon_list[i];
-        for(int i=0; i<polygon->m_realBoxes.size(); i++) {
-            bBox* rectangle = polygon->m_realBoxes[i];
+        for(int j=0; j<polygon->m_realBoxes.size(); j++) {
+            bBox* rectangle = polygon->m_realBoxes[j];
             output_file << "RECT "
                         << rectangle->x1() << " "
                         << rectangle->y1() << " "
