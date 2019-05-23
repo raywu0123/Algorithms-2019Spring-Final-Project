@@ -39,8 +39,12 @@ private:
         const vector<Segment>&, const vector<Segment>&,
         vector<Segment>&, vector<Segment>&
     );
-    vector<bShape *> _dissect_by_subregions(bShape *pShape, vector<bSegment> vector);
-    vector<bBox *> _split_subregion(bShape* pShape, vector<bPoint> vector);
+    vector<vector<Point>> _dissect_by_subregions(
+        const vector<vector<Point>>&,
+        const vector<Segment>&,
+        const vector<Segment>&
+    );
+    vector<bBox> _split_subregion(const vector<Point>&);
 };
 
 

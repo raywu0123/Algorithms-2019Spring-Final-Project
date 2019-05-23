@@ -1,5 +1,6 @@
 #include "splitter.h"
 #include "sweep_plane.h"
+#include "BipGraph.h"
 #include "MyGraph.h"
 
 namespace gtl = boost::polygon;
@@ -20,7 +21,7 @@ void Splitter::split(bShape* polygon) {
 
     const vector<vector<Point>>& loops = _get_loops(hp);
 
-    vector<pair<Point, Point>> H_edges, V_edges;
+    vector<Segment> H_edges, V_edges;
     _get_edges(loops, H_edges, V_edges);
 
     vector<pair<Point, Point>> concave_vertices = _get_concave_vertices(loops);
@@ -31,14 +32,19 @@ void Splitter::split(bShape* polygon) {
     vector<Segment> H_selected_chords, V_selected_chords;
     _maximum_independent_set(H_effective_chords, V_effective_chords, H_selected_chords, V_selected_chords);
 
-//    vector<bShape*> subregions = _dissect_by_subregions(polygon, selected_effective_chords);
-//
-//    vector<bBox> boxes;
-//    for(int i=0; i<subregions.size(); i++) {
-//        vector<bBox*>boxes_in_subregion = _split_subregion(subregions[i], concave_vertices);
-//        boxes.insert(boxes.end(), boxes_in_subregion.begin(), boxes_in_subregion.end());
-//    }
-//    polygon->setRealBoxes(boxes);
+    const vector<vector<Point>>& subregions = _dissect_by_subregions(
+        loops,
+        H_selected_chords,
+        V_selected_chords
+    );
+
+    vector<bBox> boxes;
+    for(int i=0; i<subregions.size(); i++) {
+        const vector<bBox>& boxes_in_subregion = _split_subregion(subregions[i]);
+        boxes.insert(boxes.end(), boxes_in_subregion.begin(), boxes_in_subregion.end());
+    }
+    polygon->m_realBoxes.clear();
+    polygon->setRealBoxes(boxes);
 }
 
 
@@ -257,10 +263,41 @@ void Splitter::_maximum_independent_set(
 }
 
 
-vector<bShape *> Splitter::_dissect_by_subregions(bShape* polygon, vector<bSegment> selected_effective_chords) {
-    return vector<bShape*> ();
+vector<vector<Point>> Splitter::_dissect_by_subregions(
+    const vector<vector<Point>>& loops,
+    const vector<Segment>& H_chords,
+    const vector<Segment>& V_chords
+) {
+    MyGraph graph;
+    for(const auto& loop : loops) {
+        for(int vertice_idx=0; vertice_idx < loop.size() - 1; vertice_idx++) {
+            const Point &v1 = loop[vertice_idx], &v2 = loop[vertice_idx + 1];
+            graph.add_edge(v1, v2);
+        }
+    }
+    for(const auto& s : H_chords)
+        graph.add_chord(s);
+    for(const auto& s : V_chords)
+        graph.add_chord(s);
+
+    return graph.get_subregions();
 }
 
-vector<bBox *> Splitter::_split_subregion(bShape* subregion, vector<bPoint> concave_vectives) {
-    return vector<bBox*> ();
+vector<bBox> Splitter::_split_subregion(const vector<Point>& subregion) {
+    vector<bBox> vBoxes;
+
+    gtl::polygon_90_data<int> poly;
+    gtl::set_points(poly, subregion.begin(), subregion.end());
+    vector<Rectangle> rectangles;
+    boost::polygon::get_rectangles(rectangles, poly);
+
+    for(int r=0; r<rectangles.size(); r++) {
+        vBoxes.emplace_back(
+            gtl::xl(rectangles[r]),
+            gtl::yl(rectangles[r]),
+            gtl::xh(rectangles[r]),
+            gtl::yh(rectangles[r])
+        );
+    }
+    return vBoxes;
 }

@@ -1,54 +1,39 @@
 #ifndef MYPOLYGON_MYGRAPH_H
 #define MYPOLYGON_MYGRAPH_H
 
+#include "splitter.h"
+#include <unordered_map>
 
-#include<bits/stdc++.h>
 
-using namespace std;
+class Node {
+    Node* _edges[4] = {nullptr};
 
-#define NIL 0
-#define INF INT_MAX
-
-// A class to represent Bipartite graph for Hopcroft
-// Karp implementation
-class BipGraph
-{
-    // m and n are number of vertices on left
-    // and right sides of Bipartite Graph
-    int m, n;
-
-    // adj[u] stores adjacents of left side
-    // vertex 'u'. The value of u ranges from 1 to m.
-    // 0 is used for dummy vertex
-    list<int> *adj;
-
-    // These are basically pointers to arrays needed
-    // for hopcroftKarp()
-    int *pairU, *pairV, *dist;
-
-    int matched = false;
-
-    list<int> *adj_v;
-    bool *visited_u, *visited_v;
-
+    int _direction_to_idx(const Point&, const Point&);
 public:
-    vector<int> U_ind, V_ind;
+    const Point position;
 
-    BipGraph(int m, int n); // Constructor
-    void addEdge(int u, int v); // To add edge
-
-    // Returns true if there is an augmenting path
-    bool bfs();
-
-    // Adds augmenting path if there is one beginning
-    // with u
-    bool dfs(int u);
-
-    // Returns size of maximum matcing
-    int hopcroftKarp();
-
-    void maximum_independent_set();
-
-    void myDFS(int, bool, int);
+    Node(const Point& p) : position(p){};
+    void add_edge(Node*);
+    Node* get_next_node(Node*);
 };
+
+
+struct PointHasher {
+    std::size_t operator()(const Point& p) const {
+        return (std::hash<int>()(p.x()) << 1)
+             ^ (std::hash<int>()(p.y()));
+    }
+};
+
+class MyGraph {
+    unordered_map<Point, Node*, PointHasher> _node_map;
+    set<Segment> _edge_set;
+
+    vector<Point> _get_subregion(const Segment&);
+public:
+    void add_edge(const Point& p1, const Point& p2);
+    void add_chord(const Segment&);
+    vector<vector<Point>> get_subregions();
+};
+
 #endif //MYPOLYGON_MYGRAPH_H

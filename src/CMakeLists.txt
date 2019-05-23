@@ -11,8 +11,8 @@ add_library(
     splitLib
     splitLib/splitter.cpp splitLib/splitter.h
     splitLib/sweep_plane.h
-    splitLib/MyGraph.h splitLib/MyGraph.cpp
-)
+    splitLib/BipGraph.h splitLib/BipGraph.cpp
+    splitLib/MyGraph.h splitLib/MyGraph.cpp)
 add_library(bLib bLib/bLibShape.h bLib/bLibPtr.h)
 add_library(tqdm tqdm/tqdm.h)
 

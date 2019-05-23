@@ -1,223 +1,104 @@
 #include "MyGraph.h"
 
 
-// Returns size of maximum matching
-int BipGraph::hopcroftKarp()
-{
-    // pairU[u] stores pair of u in matching where u
-    // is a vertex on left side of Bipartite Graph.
-    // If u doesn't have any pair, then pairU[u] is NIL
-    pairU = new int[m+1];
-
-    // pairV[v] stores pair of v in matching. If v
-    // doesn't have any pair, then pairU[v] is NIL
-    pairV = new int[n+1];
-
-    // dist[u] stores distance of left side vertices
-    // dist[u] is one more than dist[u'] if u is next
-    // to u'in augmenting path
-    dist = new int[m+1];
-
-    // Initialize NIL as pair of all vertices
-    for (int u=0; u<=m; u++)
-        pairU[u] = NIL;
-    for (int v=0; v<=n; v++)
-        pairV[v] = NIL;
-
-    // Initialize result
-    int result = 0;
-
-    // Keep updating the result while there is an
-    // augmenting path.
-    while (bfs())
-    {
-        // Find a free vertex
-        for (int u=1; u<=m; u++)
-
-            // If current vertex is free and there is
-            // an augmenting path from current vertex
-            if (pairU[u]==NIL && dfs(u))
-                result++;
-    }
-    return result;
+int Node::_direction_to_idx(const Point& p1, const Point& p2) {
+    if(p2.x() == p1.x()) {
+        if(p2.y() > p1.y()) return 0;
+        else return 2;
+    } else if (p2.y() == p1.y()) {
+        if(p2.x() > p1.x()) return 1;
+        else return 3;
+    } else cerr << "error converting direction to index";
 }
 
-// Returns true if there is an augmenting path, else returns
-// false
-bool BipGraph::bfs()
-{
-    queue<int> Q; //an integer queue
-
-    // First layer of vertices (set distance as 0)
-    for (int u=1; u<=m; u++)
-    {
-        // If this is a free vertex, add it to queue
-        if (pairU[u]==NIL)
-        {
-            // u is not matched
-            dist[u] = 0;
-            Q.push(u);
-        }
-
-            // Else set distance as infinite so that this vertex
-            // is considered next time
-        else dist[u] = INF;
-    }
-
-    // Initialize distance to NIL as infinite
-    dist[NIL] = INF;
-
-    // Q is going to contain vertices of left side only.
-    while (!Q.empty())
-    {
-        // Dequeue a vertex
-        int u = Q.front();
-        Q.pop();
-
-        // If this node is not NIL and can provide a shorter path to NIL
-        if (dist[u] < dist[NIL])
-        {
-            // Get all adjacent vertices of the dequeued vertex u
-            list<int>::iterator i;
-            for (i=adj[u].begin(); i!=adj[u].end(); ++i)
-            {
-                int v = *i;
-
-                // If pair of v is not considered so far
-                // (v, pairV[V]) is not yet explored edge.
-                if (dist[pairV[v]] == INF)
-                {
-                    // Consider the pair and add it to queue
-                    dist[pairV[v]] = dist[u] + 1;
-                    Q.push(pairV[v]);
-                }
-            }
-        }
-    }
-
-    // If we could come back to NIL using alternating path of distinct
-    // vertices then there is an augmenting path
-    return (dist[NIL] != INF);
-}
-
-// Returns true if there is an augmenting path beginning with free vertex u
-bool BipGraph::dfs(int u)
-{
-    if (u != NIL)
-    {
-        list<int>::iterator i;
-        for (i=adj[u].begin(); i!=adj[u].end(); ++i)
-        {
-            // Adjacent to u
-            int v = *i;
-
-            // Follow the distances set by BFS
-            if (dist[pairV[v]] == dist[u]+1)
-            {
-                // If dfs for pair of v also returns
-                // true
-                if (dfs(pairV[v]) == true)
-                {
-                    pairV[v] = u;
-                    pairU[u] = v;
-                    return true;
-                }
-            }
-        }
-
-        // If there is no augmenting path beginning with u.
-        dist[u] = INF;
-        return false;
-    }
-    return true;
-}
-
-// Constructor
-BipGraph::BipGraph(int m, int n)
-{
-    this->m = m;
-    this->n = n;
-    adj = new list<int>[m+1];
-}
-
-// To add edge from u to v and v to u
-void BipGraph::addEdge(int u, int v)
-{
-    adj[u].push_back(v); // Add u to v’s list.
-}
-
-void BipGraph::maximum_independent_set() {
-    if (!matched) {
-        hopcroftKarp();
-    }
-
-    // build adjacent list of v nodes
-    adj_v = new list<int>[n+1];
-    for(int i=1; i<=m; i++) {
-        const list<int>& adj_list= adj[i];
-        list<int>::const_iterator it;
-        for(it=adj_list.begin(); it != adj_list.end(); it++) {
-            adj_v[*it].push_back(i);
-        }
-    }
-    // init visited flags
-    visited_u = new bool[m + 1];
-    visited_v = new bool[n + 1];
-    for(int i=0; i<=m; i++)
-        visited_u[i] = false;
-    for(int i=0; i<=n; i++)
-        visited_v[i] = false;
-
-    for(int i=1; i<=m; i++) {
-        if(pairU[i] == NIL) {
-            myDFS(i, true, 0);
-        }
-    }
-    for(int i=1; i<=n; i++) {
-        if(pairV[i] == NIL) {
-            myDFS(i, false, 0);
-        }
-    }
-    for(int i=1; i<=m; i++) {
-        if(pairU[i] != NIL) {
-            myDFS(i, true, 0);
-        }
-    }
-    for(int i=1; i<=n; i++) {
-        if(pairV[i] != NIL) {
-            myDFS(i, false, 0);
-        }
-    }
+void Node::add_edge(Node* other_node) {
+    _edges[_direction_to_idx(position, other_node->position)] = other_node;
 }
 
 
-void BipGraph::myDFS(int idx, bool in_U, int level) {
-    assert(idx != 0);
-    if(in_U and visited_u[idx]) return;
-    if(not in_U and visited_v[idx]) return;
+Node* Node::get_next_node(Node* previous_node) {
+    const Point &previous_point = previous_node->position;
+    int current_direction_idx = _direction_to_idx(previous_point, position);
+    int i=0;
+    for(; i<4; i++) {
+        if(_edges[(current_direction_idx + i) % 4] != nullptr)
+            break;
+    }
+    assert(_edges[(current_direction_idx + i) % 4] != nullptr);
+    assert(_edges[(current_direction_idx + i) % 4] != previous_node);
+    return _edges[(current_direction_idx + i) % 4];
+}
 
-    if(in_U) visited_u[idx] = true;
-    else visited_v[idx] = true;
 
-    if(level % 2 == 0) {
-        if(in_U) {
-            U_ind.push_back(idx);
-            list<int>::iterator it;
-            for(it=adj[idx].begin(); it != adj[idx].end(); ++it) {
-                if(*it == 0) continue;
-                myDFS(*it, !in_U, level+1);
-            }
-        }
+void MyGraph::add_edge(const Point& start_point, const Point& end_point) {
+    _edge_set.emplace(start_point, end_point);
+    if(_node_map.find(start_point) == _node_map.end()) {
+        Node* n1 = new Node(start_point);
+        _node_map.emplace(start_point, n1);
+    }
+    if(_node_map.find(end_point) == _node_map.end()) {
+        Node* n2 = new Node(end_point);
+        _node_map.emplace(end_point, n2);
+    }
+    Node *n1 = _node_map[start_point], *n2 = _node_map[end_point];
+    n1->add_edge(n2);
+}
+
+
+void MyGraph::add_chord(const Segment& s) {
+    const Point &p1 = s.first, &p2 = s.second;
+    add_edge(p1, p2);
+    add_edge(p2, p1);
+}
+
+
+vector<vector<Point>> MyGraph::get_subregions() {
+    vector<vector<Point>> subregions;
+
+    while(not _edge_set.empty()) {
+        const Segment& s = *_edge_set.begin();
+        const vector<Point>& subregion = _get_subregion(s);
+        subregions.push_back(subregion);
+    }
+    return subregions;
+}
+
+vector<Point> MyGraph::_get_subregion(const Segment& s) {
+    vector<Point> raw_subregion;
+
+    const Point &p1 = s.first, &p2 = s.second;
+    Node *n1 = _node_map[p1], *n2 = _node_map[p2];
+    Node *n_start = n1;
+    vector<Segment> segments_to_erase;
+    do {
+        raw_subregion.push_back(n1->position);
+        segments_to_erase.emplace_back(n1->position, n2->position);
+        Node* next_node = n2->get_next_node(n1);
+        n1 = n2;
+        n2 = next_node;
+    } while(n1 != n_start);
+
+    for(const auto& erase_s: segments_to_erase)
+        _edge_set.erase(erase_s);
+
+    // reduce points so that no three consecutive points are on a line
+    vector<Point> reduced_subregion;
+    raw_subregion.push_back(raw_subregion[0]);
+    reduced_subregion.push_back(raw_subregion[0]);
+    int current_idx = 0;
+    for(int i=1; i<raw_subregion.size() - 1; i++) {
+        if(     raw_subregion[current_idx].x() == raw_subregion[i].x()
+            and raw_subregion[i + 1].x() == raw_subregion[current_idx].x()
+        )
+            continue;
+        else if(raw_subregion[current_idx].y() == raw_subregion[i].y()
+            and raw_subregion[i + 1].y() == raw_subregion[current_idx].y()
+        )
+            continue;
         else {
-            V_ind.push_back(idx);
-            list<int>::iterator it;
-            for(it=adj_v[idx].begin(); it != adj_v[idx].end(); ++it) {
-                if(*it == 0) continue;
-                myDFS(*it, !in_U, level+1);
-            }
+            reduced_subregion.push_back(raw_subregion[i]);
+            current_idx = i;
         }
-    } else {
-        if(in_U and pairU[idx] != NIL) myDFS(pairU[idx], !in_U, level+1);
-        else if(pairV[idx] != NIL) myDFS(pairV[idx], !in_U, level+1);
     }
+    return reduced_subregion;
 }
