@@ -8,11 +8,11 @@
 class Node {
     Node* _edges[4] = {nullptr};
 
-    int _direction_to_idx(const Point&, const Point&);
+    static int _direction_to_idx(const Point&, const Point&);
 public:
     const Point position;
 
-    Node(const Point& p) : position(p){};
+    explicit Node(const Point& p) : position(p){};
     void add_edge(Node*);
     Node* get_next_node(Node*);
 };

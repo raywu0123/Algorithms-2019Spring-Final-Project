@@ -1,3 +1,7 @@
+#include <utility>
+
+#include <utility>
+
 #ifndef MYPOLYGON_OPERATION_H
 #define MYPOLYGON_OPERATION_H
 
@@ -10,10 +14,10 @@ using namespace std;
 
 class Operation {
 public:
-    Operation(string type, string name): type(type), name(name) {};
+    Operation(string type, string name): type(std::move(type)), name(std::move(name)) {};
     ~Operation();
 
-    void add_polygon(string);
+    void add_polygon(const string&);
 
     string type;
     string name;

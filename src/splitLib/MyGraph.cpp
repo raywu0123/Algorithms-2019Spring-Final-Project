@@ -21,11 +21,12 @@ Node* Node::get_next_node(Node* previous_node) {
     int current_direction_idx = _direction_to_idx(previous_point, position);
     int i=0;
     for(; i<4; i++) {
+        if(_edges[(current_direction_idx + i) % 4] == previous_node)
+            continue;
         if(_edges[(current_direction_idx + i) % 4] != nullptr)
             break;
     }
     assert(_edges[(current_direction_idx + i) % 4] != nullptr);
-    assert(_edges[(current_direction_idx + i) % 4] != previous_node);
     return _edges[(current_direction_idx + i) % 4];
 }
 
