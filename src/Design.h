@@ -28,13 +28,13 @@ public:
     vector<vector<int>>  m_mergeIds;  // group some bShape together
 
 private:
-    void _split(string type);
+    void _split(const string& type);
     void _split_o();
     void _merge(
-            const vector<bLib::bShape *>& polygon_list,
-            gtl::orientation_2d split_orientation = gtl::HORIZONTAL,
-            bool verbose = true
-        );
+        const vector<bLib::bShape *>& polygon_list,
+        const gtl::orientation_2d& split_orientation = gtl::HORIZONTAL,
+        bool verbose = true
+    );
     void _clip(const vector<bLib::bShape *>& polygon_list);
     void _maintain_vpoints();
     bool _boxes2vpoints(bLib::bShape* &, vector<bLib::bShape *>&);

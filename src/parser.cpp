@@ -3,12 +3,10 @@
 
 using namespace std;
 
-Parser::Parser() {}
+Parser::Parser() = default;
 
 
-Parser::~Parser() {
-
-}
+Parser::~Parser() = default;
 
 
 bool Parser::read_input(char* filename) {

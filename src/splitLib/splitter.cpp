@@ -2,6 +2,8 @@
 #include "sweep_plane.h"
 #include "BipGraph.h"
 #include "MyGraph.h"
+#include "../bLib/bLibRTree.h"
+
 
 namespace gtl = boost::polygon;
 
@@ -32,15 +34,15 @@ void Splitter::split(bShape* polygon) {
     vector<Segment> H_selected_chords, V_selected_chords;
     _maximum_independent_set(H_effective_chords, V_effective_chords, H_selected_chords, V_selected_chords);
 
-    const vector<vector<Point>>& subregions = _dissect_by_subregions(
+    const vector<HolePolygon>& subregions = _dissect_by_subregions(
         loops,
         H_selected_chords,
         V_selected_chords
     );
 
     vector<bBox> boxes;
-    for(int i=0; i<subregions.size(); i++) {
-        const vector<bBox>& boxes_in_subregion = _split_subregion(subregions[i]);
+    for(const auto & subregion : subregions) {
+        const vector<bBox>& boxes_in_subregion = _split_subregion(subregion);
         boxes.insert(boxes.end(), boxes_in_subregion.begin(), boxes_in_subregion.end());
     }
     polygon->m_realBoxes.clear();
@@ -263,13 +265,45 @@ void Splitter::_maximum_independent_set(
 }
 
 
-vector<vector<Point>> Splitter::_dissect_by_subregions(
+vector<HolePolygon> Splitter::_dissect_by_subregions(
     const vector<vector<Point>>& loops,
     const vector<Segment>& H_chords,
     const vector<Segment>& V_chords
 ) {
     MyGraph graph;
-    for(const auto& loop : loops) {
+    // check whether holes are isolated, i.e. no chords connected
+    set<Point> point_of_chords;
+    for(const auto& s: H_chords) {
+        point_of_chords.insert(s.first);
+        point_of_chords.insert(s.second);
+    }
+    for(const auto& s: V_chords) {
+        point_of_chords.insert(s.first);
+        point_of_chords.insert(s.second);
+    }
+    vector<bool> isolation_flag_of_loops;
+    isolation_flag_of_loops.push_back(false); // exterior is not considered isolated
+    vector<int> idx_of_isolated_loops;
+    for(int loop_idx=1; loop_idx<loops.size(); loop_idx++) {
+        const vector<Point>& loop = loops[loop_idx];
+        bool is_isolated = true;
+        for (int vertice_idx = 0; vertice_idx < loop.size() - 1; vertice_idx++) {
+            const Point& p = loop[vertice_idx];
+            if(point_of_chords.find(p) != point_of_chords.end()) {
+                is_isolated = false;
+                break;
+            }
+        }
+        isolation_flag_of_loops.push_back(is_isolated);
+        if(is_isolated)
+            idx_of_isolated_loops.push_back(loop_idx);
+    }
+
+    // build graph for traversal
+    for(int loop_idx=0; loop_idx<loops.size(); loop_idx++) {
+        if(isolation_flag_of_loops[loop_idx])
+            continue;
+        const vector<Point>& loop = loops[loop_idx];
         for(int vertice_idx=0; vertice_idx < loop.size() - 1; vertice_idx++) {
             const Point &v1 = loop[vertice_idx], &v2 = loop[vertice_idx + 1];
             graph.add_edge(v1, v2);
@@ -280,23 +314,91 @@ vector<vector<Point>> Splitter::_dissect_by_subregions(
     for(const auto& s : V_chords)
         graph.add_chord(s);
 
-    return graph.get_subregions();
+    const vector<vector<Point>>& subregions = graph.get_subregions();
+
+    // check where holes are included
+
+    // build r-tree
+    bLibRTree<bShape> m_rtree;
+    vector<bShape> bshape_of_subregions;
+    for(int idx=0; idx<subregions.size(); idx++) {
+        const auto& subregion = subregions[idx];
+        vector<bPoint> vpoints;
+        int xl = INT_MAX, yl = INT_MAX;
+        int xh = INT_MIN, yh = INT_MIN;
+        for(const auto& p : subregion) {
+            int x = p.x(), y = p.y();
+            vpoints.emplace_back(x, y);
+            if (xl > x) xl = x;
+            if (yl > y) yl = y;
+            if (xh < x) xh = x;
+            if (yh < y) yh = y;
+        }
+        auto* pmyshape = new bShape(xl, yl, xh, yh);
+        pmyshape->setPoints(vpoints);
+        pmyshape->setId(idx);
+        m_rtree.insert(pmyshape);
+    }
+
+    vector<int> idx_of_containing_polygon;
+    vector<vector<int>> hole_idx_of_subregion;
+    for(const auto& subregion: subregions)
+        hole_idx_of_subregion.emplace_back();
+
+    for(const auto& idx: idx_of_isolated_loops) {
+        const auto& loop = loops[idx];
+        vector<bPoint> vpoints;
+        int xl = INT_MAX, yl = INT_MAX;
+        int xh = INT_MIN, yh = INT_MIN;
+        for(const auto& p : loop) {
+            int x = p.x(), y = p.y();
+            vpoints.emplace_back(x, y);
+            if (xl > x) xl = x;
+            if (yl > y) yl = y;
+            if (xh < x) xh = x;
+            if (yh < y) yh = y;
+        }
+        m_rtree.search(xl, yl, xh, yh);
+        int size = bLibRTree<bShape>::s_searchResult.size();
+
+        // not sure if query only return one result, need test here
+        assert(size == 1);
+        int adj_idx = bLibRTree<bShape>::s_searchResult[0]->getId();
+        hole_idx_of_subregion[adj_idx].push_back(idx);
+    }
+
+    // create HolePolygons
+    vector<HolePolygon> hps;
+    for(int subregion_idx=0; subregion_idx<subregions.size(); subregion_idx++) {
+        const auto& subregion = subregions[subregion_idx];
+        HolePolygon poly;
+        poly.set(subregion.begin(), subregion.end());
+
+        vector<gtl::polygon_90_data<int>> holes;
+        for(const auto& hole_idx: hole_idx_of_subregion[subregion_idx]) {
+            gtl::polygon_90_data<int> hole;
+            // loops contains end point same as end point
+            // thus use back_it to get iterator of last element (not adding it)
+            auto back_it = loops[hole_idx].end(); back_it--;
+            gtl::set_points(hole, loops[hole_idx].begin(), back_it);
+            holes.push_back(hole);
+        }
+        poly.set_holes(holes.begin(), holes.end());
+        hps.push_back(poly);
+    }
+    return hps;
 }
 
-vector<bBox> Splitter::_split_subregion(const vector<Point>& subregion) {
+vector<bBox> Splitter::_split_subregion(const HolePolygon& subregion) {
     vector<bBox> vBoxes;
-
-    gtl::polygon_90_data<int> poly;
-    gtl::set_points(poly, subregion.begin(), subregion.end());
     vector<Rectangle> rectangles;
-    boost::polygon::get_rectangles(rectangles, poly);
-
-    for(int r=0; r<rectangles.size(); r++) {
+    boost::polygon::get_rectangles(rectangles, subregion);
+    for(const auto & rectangle : rectangles) {
         vBoxes.emplace_back(
-            gtl::xl(rectangles[r]),
-            gtl::yl(rectangles[r]),
-            gtl::xh(rectangles[r]),
-            gtl::yh(rectangles[r])
+            gtl::xl(rectangle),
+            gtl::yl(rectangle),
+            gtl::xh(rectangle),
+            gtl::yh(rectangle)
         );
     }
     return vBoxes;
