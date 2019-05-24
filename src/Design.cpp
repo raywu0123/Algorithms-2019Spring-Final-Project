@@ -185,7 +185,7 @@ void Design::_clip(const vector<bShape*>& new_polygons) {
                     bBox* box1 = adjshape->m_realBoxes[l];
                     bBox* box2 = shape->m_realBoxes[k];
                     // if nothing to sub, pass the box to newBoxes.
-                    if (not box1->overlaps(box2, true)) newBoxes.push_back(box1);
+                    if (not box1->overlaps(box2, false)) newBoxes.push_back(box1);
                     // if to sub, pass the subbed result(a vector) to newBoxes.
                     else{
                         std::vector<bBox*> to_append = box1->subtract(box2);
