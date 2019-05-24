@@ -17,6 +17,10 @@ bool Comparator_YX(const pair<Point, Point>& a, const pair<Point, Point>& b) {
     return a.first.x() < b.first.x();
 }
 
+template <typename T> int sgn(T val) {
+    return (T(0) < val) - (val < T(0));
+}
+
 
 void Splitter::split(bShape* polygon) {
     HolePolygon hp = _build_graph(polygon);
@@ -86,7 +90,7 @@ vector<vector<Point>> Splitter::_get_loops(const HolePolygon& hp) {
 
 void Splitter::_get_edges(const vector<vector<Point>>& loops, vector<Segment>& h_edges, vector<Segment>& v_edges) {
     for(const auto& loop : loops) {
-        for(int vertice_idx=0; vertice_idx < loop.size() - 1; vertice_idx++) {
+        for(int vertice_idx=0; vertice_idx < int(loop.size()) - 1; vertice_idx++) {
             const Point & v1 = loop[vertice_idx], & v2 = loop[vertice_idx + 1];
             if(v1.x() == v2.x()) {
                 if(v1.y() < v2.y()) v_edges.emplace_back(v1, v2);
@@ -106,11 +110,12 @@ vector<pair<Point, Point>> Splitter::_get_concave_vertices(const vector<vector<P
     vector<vector<Point>> custom_loops = loops;
     for(auto& loop: custom_loops) loop.pop_back();
     for(const auto& loop : custom_loops) {
-        for(int vertice_idx=0; vertice_idx < loop.size(); vertice_idx++) {
+        for(int vertice_idx=1; vertice_idx < loop.size() + 1; vertice_idx++) {
             int dx1 = loop[vertice_idx].x() - loop[vertice_idx - 1].x();
             int dy1 = loop[vertice_idx].y() - loop[vertice_idx - 1].y();
             int dx2 = loop[(vertice_idx + 1) % loop.size()].x() - loop[vertice_idx].x();
             int dy2 = loop[(vertice_idx + 1) % loop.size()].y() - loop[vertice_idx].y();
+            dx1 = sgn(dx1); dy1 = sgn(dy1); dx2 = sgn(dx2); dy2 = sgn(dy2);
             if(dx1 * dy2 - dx2 * dy1 > 0) // determine concavity by outer product of edge vectors
                 concave_vertices.emplace_back(loop[vertice_idx], Point(dx1, dy1));
         }
@@ -128,7 +133,8 @@ void Splitter::_get_effective_chords(
     ) {
     vector<pair<Point, Point>> v_candidates;
     std::sort(concave_vertices.begin(), concave_vertices.end(), Comparator_XY);
-    for(int i=0; i<concave_vertices.size() - 1; i++) {
+
+    for(int i=0; i<int(concave_vertices.size()) - 1; i++) {
         const pair<Point, Point>& v1 = concave_vertices[i];
         const pair<Point, Point>& v2 = concave_vertices[i + 1];
         if(v2.first.x() != v1.first.x()) continue;
@@ -143,7 +149,7 @@ void Splitter::_get_effective_chords(
 
     vector<pair<Point, Point>> h_candidates;
     std::sort(concave_vertices.begin(), concave_vertices.end(), Comparator_YX);
-    for(int i=0; i<concave_vertices.size() - 1; i++) {
+    for(int i=0; i<int(concave_vertices.size()) - 1; i++) {
         const pair<Point, Point>& v1 = concave_vertices[i];
         const pair<Point, Point>& v2 = concave_vertices[i + 1];
         if(v2.first.y() != v1.first.y()) continue;
@@ -227,7 +233,7 @@ void Splitter::_maximum_independent_set(
     }
 
     map<Segment const*, int> Vsegment2idx;
-    for(int idx = 0; idx < V_effective_chords.size(); idx++) {
+    for(int idx = 0; idx<V_effective_chords.size(); idx++) {
         const auto& e = V_effective_chords[idx];
         events.emplace_back(e.first.x(), PARALLEL_SEGMENT, &e);
         Vsegment2idx[&e] = idx;
@@ -287,7 +293,7 @@ vector<HolePolygon> Splitter::_dissect_by_subregions(
     for(int loop_idx=1; loop_idx<loops.size(); loop_idx++) {
         const vector<Point>& loop = loops[loop_idx];
         bool is_isolated = true;
-        for (int vertice_idx = 0; vertice_idx < loop.size() - 1; vertice_idx++) {
+        for (int vertice_idx = 0; vertice_idx < int(loop.size()) - 1; vertice_idx++) {
             const Point& p = loop[vertice_idx];
             if(point_of_chords.find(p) != point_of_chords.end()) {
                 is_isolated = false;
@@ -304,7 +310,7 @@ vector<HolePolygon> Splitter::_dissect_by_subregions(
         if(isolation_flag_of_loops[loop_idx])
             continue;
         const vector<Point>& loop = loops[loop_idx];
-        for(int vertice_idx=0; vertice_idx < loop.size() - 1; vertice_idx++) {
+        for(int vertice_idx=0; vertice_idx < int(loop.size()) - 1; vertice_idx++) {
             const Point &v1 = loop[vertice_idx], &v2 = loop[vertice_idx + 1];
             graph.add_edge(v1, v2);
         }

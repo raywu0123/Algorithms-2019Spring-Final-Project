@@ -344,17 +344,18 @@ void Design::_maintain_vpoints(){
 }
 
 void Design::_split(const string& type) {
-    if(type == "SO") _split_o();
-    else if(type == "SV") _merge(vector<bShape*>(), gtl::VERTICAL, false);
-    else if(type == "SH") _merge(vector<bShape*>(), gtl::HORIZONTAL, false);
-    else cerr << "ERR | Incorrect split type: " << type << endl;
-    cout << "STAT| Split complete." << endl;
+    _split_o();
+//    if(type == "SO") _split_o();
+//    else if(type == "SV") _merge(vector<bShape*>(), gtl::VERTICAL, false);
+//    else if(type == "SH") _merge(vector<bShape*>(), gtl::HORIZONTAL, false);
+//    else cerr << "ERR | Incorrect split type: " << type << endl;
+//    cout << "STAT| Split complete." << endl;
 }
 
 
 void Design::_split_o() {
-    for(auto & i : _polygon_list) {
-        Splitter::split(i);
+    for(auto & polygon : _polygon_list) {
+        Splitter::split(polygon);
     }
 }
 
