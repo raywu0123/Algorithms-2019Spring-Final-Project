@@ -3,7 +3,6 @@ err_file_num=0
 for entry in ./* ; do
     echo $entry
     if [[ $entry =~ ^\./errorcase\.in.* ]]; then
-        echo "fuck"
         ((err_file_num++))
     fi
 done
@@ -21,5 +20,5 @@ for i in {1..100}; do
         break
     fi
     rm random.in.$i random.out.$i
-    read -p "Press enter to continue"
+    # read -p "Press enter to continue"
 done;

@@ -60,7 +60,7 @@ class MyCanvas():
     def verify(self):
         res = (self.in_map != self.out_map).sum()
         if res==0:
-            print("`%s` <=> `%s` verify successfully!"%self.name)
+            print("%s <=> %s verify successfully!"%self.name)
             # import matplotlib.pyplot as plt
             # plt.matshow((self.in_map))
             # plt.show()

@@ -1,5 +1,6 @@
 import sys
 import random
+import numpy as np
 
 class MyCanvas():
     def __init__(self, width=1000, height=1000):
@@ -21,13 +22,13 @@ class MyCanvas():
 
 
     def add_merge(self):
-        print("ADD MERGE: M%d"%self.mid)
+        # print("ADD MERGE: M%d"%self.mid)
         self.operations.append({"name": "M%d" % self.mid, "polys": [[]]})
         self.mid += 1
         self.end = False
     
     def add_clip(self):
-        print("ADD CLIP: C%d"%self.cid)
+        # print("ADD CLIP: C%d"%self.cid)
         self.operations.append({"name":"C%d"%self.cid, "polys":[[]]})
         self.cid += 1
         self.end = False
@@ -36,20 +37,28 @@ class MyCanvas():
         for i_loop in range(n_loop):
             self.add_merge()
             for i_rect in range(n_rect):
-                x1, x2 = sorted(list(random.sample(range(1, 1000), 2))) #sorted([random.randint(1, 999), random.randint(1, 999)])
-                y1, y2 = sorted(list(random.sample(range(1, 1000), 2)))# sorted([random.randint(1, 999), random.randint(1, 999)])
+                x1 = 0; x2 = 0; y1 = 0; y2 = 0
+                while not x1 != x2:
+                    x1, x2 = sorted(list(np.random.choice(1000, 2, replace=False))) #sorted([random.randint(1, 999), random.randint(1, 999)])
+                while not y1 != y2:
+                    y1, y2 = sorted(list(np.random.choice(1000, 2, replace=False)))# sorted([random.randint(1, 999), random.randint(1, 999)])
                 assert x1 != x2
                 assert y1 != y2
                 self.add_rect(x1, x2, y1, y2)
             self.add_clip()
             for i_rect in range(n_rect):
-                x1, x2 = sorted(list(random.sample(range(1, 1000), 2))) # sorted([random.randint(1, 999), random.randint(1, 999)])
-                y1, y2 = sorted(list(random.sample(range(1, 1000), 2))) # sorted([random.randint(1, 999), random.randint(1, 999)])
+                x1 = 0; x2 = 0; y1 = 0; y2 = 0
+                while not x1 != x2:
+                    x1, x2 = sorted(list(np.random.choice(1000, 2, replace=False))) #sorted([random.randint(1, 999), random.randint(1, 999)])
+                while not y1 != y2:
+                    y1, y2 = sorted(list(np.random.choice(1000, 2, replace=False)))# sorted([random.randint(1, 999), random.randint(1, 999)])
                 assert x1 != x2
                 assert y1 != y2
                 self.add_rect(x1, x2, y1, y2)
 
-    def add_rect(self, x1, y1, x2, y2):
+    def add_rect(self, x1, x2, y1, y2):
+        assert x1 != x2
+        assert y1 != y2
         if self.end:
             self.operations[-1]['polys'].append([])
             self.end = False
@@ -79,5 +88,5 @@ if __name__ == "__main__":
     canvas= MyCanvas(width=1000, height=1000)
     canvas.random_add(int(sys.argv[2]), int(sys.argv[3]))
 
-    print(canvas.operations)
+    # print(canvas.operations)
     dict2testcase(canvas.operations, sys.argv[1])
