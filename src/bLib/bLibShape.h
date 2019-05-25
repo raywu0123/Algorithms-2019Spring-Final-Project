@@ -114,9 +114,18 @@ bBox::overlaps(bBox* box, bool flag)
   // following are from oaBox.cpp
   if (flag)
   {
-    return (!(x1() > box->x2() || y1() > box->y2()
-          || x2() < box->x1() || y2() < box->y1()) && !((x1()==box->x2() && y1()==box->y2()) || 
-          (x2()==box->x1() && y2()==box->y1()) || (x1()==box->x2() && y2()==box->y1()) || (x2()==box->x1() && y1()==box->y2())));
+      if (x1() > box->x2()) return false;
+      if (y1() > box->y2()) return false;
+      if (x2() < box->x1()) return false;
+      if (y2() < box->y1()) return false;
+      if (x1()==box->x2() && y1()==box->y2()) return false;
+      if (x2()==box->x1() && y2()==box->y1()) return false;
+      if (x1()==box->x2() && y2()==box->y1()) return false;
+      if (x2()==box->x1() && y1()==box->y2()) return false;
+      return true;
+    // return (!(x1() > box->x2() || y1() > box->y2()
+    //       || x2() < box->x1() || y2() < box->y1()) && !((x1()==box->x2() && y1()==box->y2()) || 
+    //       (x2()==box->x1() && y2()==box->y1()) || (x1()==box->x2() && y2()==box->y1()) || (x2()==box->x1() && y1()==box->y2())));
   }
 
     return !(x1() >= box->x2() || y1() >= box->y2()

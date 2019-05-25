@@ -35,7 +35,7 @@ class MyCanvas():
         self.cid += 1
         self.end = False
 
-    def random_add(self, n_loop=3, n_rect=5, scale=10):
+    def random_add(self, n_loop=3, n_rect=5, scale=1):
         for i_loop in range(n_loop):
             self.add_merge()
             for i_rect in range(n_rect):
