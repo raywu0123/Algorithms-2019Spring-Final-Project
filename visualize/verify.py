@@ -9,6 +9,7 @@ class MyCanvas():
         self.file = open(file, 'r')
         self.file_out = open(file_out, 'r')
         self.mode = None
+        self.name = (file, file_out)
 
         self.in_map = np.zeros((width, height), dtype=np.bool)
         self.out_map = np.zeros((width, height), dtype=np.bool)
@@ -33,7 +34,8 @@ class MyCanvas():
             if spt[0] == "DATA":
                 self.mode = spt[1]
             if spt[0] in ["OPERATION", "DATA", "END"]: 
-                print(line)
+                # print(line)
+                pass
             else:
                 yield line
 
@@ -45,7 +47,7 @@ class MyCanvas():
                 continue
             spt = line.split(' ')
             assert spt[0] == "RECT"
-            print(line)
+            # print(line)
             yield line
 
     def coords2minmax(self, coords):
@@ -58,21 +60,22 @@ class MyCanvas():
     def verify(self):
         res = (self.in_map != self.out_map).sum()
         if res==0:
-            print("verify successfully!")
-            import matplotlib.pyplot as plt
-            plt.matshow((self.in_map))
-            plt.show()
-            plt.matshow((self.out_map))
-            plt.show()
+            print("`%s` <=> `%s` verify successfully!"%self.name)
+            # import matplotlib.pyplot as plt
+            # plt.matshow((self.in_map))
+            # plt.show()
+            # plt.matshow((self.out_map))
+            # plt.show()
         else:
             print("verify failed! with %d errors" % res)
-            import matplotlib.pyplot as plt
-            plt.matshow((self.in_map))
-            plt.show()
-            plt.matshow((self.out_map))
-            plt.show()
-            plt.matshow((self.in_map != self.out_map))
-            plt.show()
+            sys.exit(127)
+            # import matplotlib.pyplot as plt
+            # plt.matshow((self.in_map))
+            # plt.show()
+            # plt.matshow((self.out_map))
+            # plt.show()
+            # plt.matshow((self.in_map != self.out_map))
+            # plt.show()
 
 
     def draw_poly(self, coords):
