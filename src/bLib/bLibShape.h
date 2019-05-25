@@ -114,8 +114,9 @@ bBox::overlaps(bBox* box, bool flag)
   // following are from oaBox.cpp
   if (flag)
   {
-    return !(x1() > box->x2() || y1() > box->y2()
-          || x2() < box->x1() || y2() < box->y1());
+    return (!(x1() > box->x2() || y1() > box->y2()
+          || x2() < box->x1() || y2() < box->y1()) && !((x1()==box->x2() && y1()==box->y2()) || 
+          (x2()==box->x1() && y2()==box->y1()) || (x1()==box->x2() && y2()==box->y1()) || (x2()==box->x1() && y1()==box->y2())));
   }
 
     return !(x1() >= box->x2() || y1() >= box->y2()
