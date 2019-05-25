@@ -35,28 +35,28 @@ class MyCanvas():
         self.cid += 1
         self.end = False
 
-    def random_add(self, n_loop=3, n_rect=5):
+    def random_add(self, n_loop=3, n_rect=5, scale=10):
         for i_loop in range(n_loop):
             self.add_merge()
             for i_rect in range(n_rect):
                 x1 = 0; x2 = 0; y1 = 0; y2 = 0
                 while not x1 != x2:
-                    x1, x2 = sorted(list(np.random.choice(self.width, 2, replace=False))) #sorted([random.randint(1, 999), random.randint(1, 999)])
+                    x1, x2 = sorted(list(np.random.choice(self.width//scale, 2, replace=False))) #sorted([random.randint(1, 999), random.randint(1, 999)])
                 while not y1 != y2:
-                    y1, y2 = sorted(list(np.random.choice(self.height, 2, replace=False)))# sorted([random.randint(1, 999), random.randint(1, 999)])
+                    y1, y2 = sorted(list(np.random.choice(self.height//scale, 2, replace=False)))# sorted([random.randint(1, 999), random.randint(1, 999)])
                 assert x1 != x2
                 assert y1 != y2
-                self.add_rect(x1, x2, y1, y2)
+                self.add_rect(x1*scale, x2*scale, y1*scale, y2*scale)
             self.add_clip()
             for i_rect in range(n_rect):
                 x1 = 0; x2 = 0; y1 = 0; y2 = 0
                 while not x1 != x2:
-                    x1, x2 = sorted(list(np.random.choice(self.width, 2, replace=False))) #sorted([random.randint(1, 999), random.randint(1, 999)])
+                    x1, x2 = sorted(list(np.random.choice(self.width//scale, 2, replace=False))) #sorted([random.randint(1, 999), random.randint(1, 999)])
                 while not y1 != y2:
-                    y1, y2 = sorted(list(np.random.choice(self.height, 2, replace=False)))# sorted([random.randint(1, 999), random.randint(1, 999)])
+                    y1, y2 = sorted(list(np.random.choice(self.height//scale, 2, replace=False)))# sorted([random.randint(1, 999), random.randint(1, 999)])
                 assert x1 != x2
                 assert y1 != y2
-                self.add_rect(x1, x2, y1, y2)
+                self.add_rect(x1*scale, x2*scale, y1*scale, y2*scale)
 
     def add_rect(self, x1, x2, y1, y2):
         assert x1 != x2

@@ -6,10 +6,13 @@ for entry in ./* ; do
         ((err_file_num++))
     fi
 done
-echo $err_file_num
-for i in {1..100}; do
-    python random_case.py random.in.$i $i 5
-    ../build/myPolygon  random.in.$i random.out.$i
+echo "existed errorcase file: $err_file_num"
+
+cd ../build/ && cmake ../src && make && cd ../visualize
+
+for ((i=1; i<=$1; i++)); do
+    python random_case.py random.in.$i 10 5
+    ../build/myPolygon  random.in.$i random.out.$i > /dev/null
     python verify.py random.in.$i random.out.$i 1000
     if [ "$?" -ne 0 ]; then
         echo "error occurs in random.in.$i. Abort!"

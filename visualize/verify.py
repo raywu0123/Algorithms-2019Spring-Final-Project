@@ -17,11 +17,11 @@ class MyCanvas():
     def proc(self):
         for line in self.read():
             self.draw_line(line)
-        print("Input file bitmap built!")
+        # print("Input file bitmap built!")
 
         for line in self.out():
             self.draw_line_rect(line)
-        print("Output file bitmap built!")
+        # print("Output file bitmap built!")
         self.verify()
 
         
@@ -67,7 +67,7 @@ class MyCanvas():
             # plt.matshow((self.out_map))
             # plt.show()
         else:
-            print("verify failed! with %d errors" % res)
+            print("%s <=> %s verify failed! with %d errors" % (self.name[0], self.name[1], res))
             sys.exit(127)
             # import matplotlib.pyplot as plt
             # plt.matshow((self.in_map))
