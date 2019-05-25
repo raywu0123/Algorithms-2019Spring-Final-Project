@@ -12,13 +12,28 @@ bool Comparator_XY(const pair<Point, Point>& a, const pair<Point, Point>& b) {
     return a.first.y() < b.first.y();
 }
 
+
 bool Comparator_YX(const pair<Point, Point>& a, const pair<Point, Point>& b) {
     if (a.first.y() != b.first.y()) return a.first.y() < b.first.y();
     return a.first.x() < b.first.x();
 }
 
+
 template <typename T> int sgn(T val) {
     return (T(0) < val) - (val < T(0));
+}
+
+// code taken from https://wrf.ecse.rpi.edu/Research/Short_Notes/pnpoly.html
+int pnpoly(const vector<Point>& verts, int testx, int testy)
+{
+    int i, j, c = 0;
+    int nvert = verts.size();
+    for (i = 0, j = nvert-1; i < nvert; j = i++) {
+        if ( ((verts[i].y()>testy) != (verts[j].y()>testy)) &&
+             (testx < (verts[j].x()-verts[i].x()) * (testy-verts[i].y()) / (verts[j].y()-verts[i].y()) + verts[i].x()) )
+            c = !c;
+    }
+    return c;
 }
 
 
@@ -43,7 +58,6 @@ void Splitter::split(bShape* polygon) {
         H_selected_chords,
         V_selected_chords
     );
-
     vector<bBox> boxes;
     for(const auto & subregion : subregions) {
         const vector<bBox>& boxes_in_subregion = _split_subregion(subregion);
@@ -277,7 +291,6 @@ vector<HolePolygon> Splitter::_dissect_by_subregions(
     const vector<Segment>& V_chords
 ) {
     MyGraph graph;
-    // check whether holes are isolated, i.e. no chords connected
     set<Point> point_of_chords;
     for(const auto& s: H_chords) {
         point_of_chords.insert(s.first);
@@ -287,29 +300,8 @@ vector<HolePolygon> Splitter::_dissect_by_subregions(
         point_of_chords.insert(s.first);
         point_of_chords.insert(s.second);
     }
-    vector<bool> isolation_flag_of_loops;
-    isolation_flag_of_loops.push_back(false); // exterior is not considered isolated
-    vector<int> idx_of_isolated_loops;
-    for(int loop_idx=1; loop_idx<loops.size(); loop_idx++) {
-        const vector<Point>& loop = loops[loop_idx];
-        bool is_isolated = true;
-        for (int vertice_idx = 0; vertice_idx < int(loop.size()) - 1; vertice_idx++) {
-            const Point& p = loop[vertice_idx];
-            if(point_of_chords.find(p) != point_of_chords.end()) {
-                is_isolated = false;
-                break;
-            }
-        }
-        isolation_flag_of_loops.push_back(is_isolated);
-        if(is_isolated)
-            idx_of_isolated_loops.push_back(loop_idx);
-    }
-
     // build graph for traversal
-    for(int loop_idx=0; loop_idx<loops.size(); loop_idx++) {
-        if(isolation_flag_of_loops[loop_idx])
-            continue;
-        const vector<Point>& loop = loops[loop_idx];
+    for(const auto & loop : loops) {
         for(int vertice_idx=0; vertice_idx < int(loop.size()) - 1; vertice_idx++) {
             const Point &v1 = loop[vertice_idx], &v2 = loop[vertice_idx + 1];
             graph.add_edge(v1, v2);
@@ -322,11 +314,9 @@ vector<HolePolygon> Splitter::_dissect_by_subregions(
 
     const vector<vector<Point>>& subregions = graph.get_subregions();
 
-    // check where holes are included
-
     // build r-tree
     bLibRTree<bShape> m_rtree;
-    vector<bShape> bshape_of_subregions;
+    vector<bShape*> bshapes_of_subregions;
     for(int idx=0; idx<subregions.size(); idx++) {
         const auto& subregion = subregions[idx];
         vector<bPoint> vpoints;
@@ -344,50 +334,56 @@ vector<HolePolygon> Splitter::_dissect_by_subregions(
         pmyshape->setPoints(vpoints);
         pmyshape->setId(idx);
         m_rtree.insert(pmyshape);
+        bshapes_of_subregions.push_back(pmyshape);
     }
 
-    vector<int> idx_of_containing_polygon;
+    // create polygons
+    vector<Polygon90> poly_of_subregions;
+    vector<bool> is_included;
+    vector<bool> is_hole;
     vector<vector<int>> hole_idx_of_subregion;
-    for(const auto& subregion: subregions)
+    for(const auto& subregion: subregions) {
         hole_idx_of_subregion.emplace_back();
+        is_included.emplace_back(false);
+        Polygon90 poly;
+        gtl::set_points(poly, subregion.begin(), subregion.end());
+        poly_of_subregions.push_back(poly);
+        is_hole.push_back(gtl::winding(poly) == gtl::COUNTERCLOCKWISE);
+    }
 
-    for(const auto& idx: idx_of_isolated_loops) {
-        const auto& loop = loops[idx];
-        vector<bPoint> vpoints;
-        int xl = INT_MAX, yl = INT_MAX;
-        int xh = INT_MIN, yh = INT_MIN;
-        for(const auto& p : loop) {
-            int x = p.x(), y = p.y();
-            vpoints.emplace_back(x, y);
-            if (xl > x) xl = x;
-            if (yl > y) yl = y;
-            if (xh < x) xh = x;
-            if (yh < y) yh = y;
+    for(int subregion_idx=0; subregion_idx<subregions.size(); subregion_idx++) {
+        const auto& subregion = subregions[subregion_idx];
+        if(is_included[subregion_idx] or is_hole[subregion_idx])
+            continue;
+        bShape* bshape_of_subregion = bshapes_of_subregions[subregion_idx];
+        m_rtree.search(
+            bshape_of_subregion->x1(), bshape_of_subregion->y1(),
+            bshape_of_subregion->x2(), bshape_of_subregion->y2()
+        );
+        for(const auto& adjshape: bLibRTree<bShape>::s_searchResult) {
+            int adj_idx = adjshape->getId();
+            if(adj_idx == subregion_idx or not is_hole[adj_idx])
+                continue;
+            const bPoint& one_point_of_adjshape = adjshape->getVPoints()[0];
+            if(pnpoly(subregion, one_point_of_adjshape.x(), one_point_of_adjshape.y())) {
+                hole_idx_of_subregion[subregion_idx].push_back(adj_idx);
+                is_included[adj_idx] = true;
+            }
         }
-        m_rtree.search(xl, yl, xh, yh);
-        int size = bLibRTree<bShape>::s_searchResult.size();
-
-        // not sure if query only return one result, need test here
-        assert(size == 1);
-        int adj_idx = bLibRTree<bShape>::s_searchResult[0]->getId();
-        hole_idx_of_subregion[adj_idx].push_back(idx);
     }
 
     // create HolePolygons
     vector<HolePolygon> hps;
     for(int subregion_idx=0; subregion_idx<subregions.size(); subregion_idx++) {
+        if(is_included[subregion_idx])
+            continue;
         const auto& subregion = subregions[subregion_idx];
         HolePolygon poly;
         poly.set(subregion.begin(), subregion.end());
 
-        vector<gtl::polygon_90_data<int>> holes;
+        vector<Polygon90> holes;
         for(const auto& hole_idx: hole_idx_of_subregion[subregion_idx]) {
-            gtl::polygon_90_data<int> hole;
-            // loops contains end point same as end point
-            // thus use back_it to get iterator of last element (not adding it)
-            auto back_it = loops[hole_idx].end(); back_it--;
-            gtl::set_points(hole, loops[hole_idx].begin(), back_it);
-            holes.push_back(hole);
+            holes.push_back(poly_of_subregions[hole_idx]);
         }
         poly.set_holes(holes.begin(), holes.end());
         hps.push_back(poly);
