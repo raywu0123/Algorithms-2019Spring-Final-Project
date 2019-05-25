@@ -8,6 +8,8 @@ class MyCanvas():
         self.mid = 1
         self.cid = 1
         self.end = False
+        self.width = width
+        self.height = height
 
     def remove_redundent(self, l):
         assert len(l) % 2 == 0
@@ -39,9 +41,9 @@ class MyCanvas():
             for i_rect in range(n_rect):
                 x1 = 0; x2 = 0; y1 = 0; y2 = 0
                 while not x1 != x2:
-                    x1, x2 = sorted(list(np.random.choice(1000, 2, replace=False))) #sorted([random.randint(1, 999), random.randint(1, 999)])
+                    x1, x2 = sorted(list(np.random.choice(self.width, 2, replace=False))) #sorted([random.randint(1, 999), random.randint(1, 999)])
                 while not y1 != y2:
-                    y1, y2 = sorted(list(np.random.choice(1000, 2, replace=False)))# sorted([random.randint(1, 999), random.randint(1, 999)])
+                    y1, y2 = sorted(list(np.random.choice(self.height, 2, replace=False)))# sorted([random.randint(1, 999), random.randint(1, 999)])
                 assert x1 != x2
                 assert y1 != y2
                 self.add_rect(x1, x2, y1, y2)
@@ -49,9 +51,9 @@ class MyCanvas():
             for i_rect in range(n_rect):
                 x1 = 0; x2 = 0; y1 = 0; y2 = 0
                 while not x1 != x2:
-                    x1, x2 = sorted(list(np.random.choice(1000, 2, replace=False))) #sorted([random.randint(1, 999), random.randint(1, 999)])
+                    x1, x2 = sorted(list(np.random.choice(self.width, 2, replace=False))) #sorted([random.randint(1, 999), random.randint(1, 999)])
                 while not y1 != y2:
-                    y1, y2 = sorted(list(np.random.choice(1000, 2, replace=False)))# sorted([random.randint(1, 999), random.randint(1, 999)])
+                    y1, y2 = sorted(list(np.random.choice(self.height, 2, replace=False)))# sorted([random.randint(1, 999), random.randint(1, 999)])
                 assert x1 != x2
                 assert y1 != y2
                 self.add_rect(x1, x2, y1, y2)
@@ -85,7 +87,7 @@ def dict2testcase(di, filename):
 
 if __name__ == "__main__":
     assert len(sys.argv) >= 4
-    canvas= MyCanvas(width=1000, height=1000)
+    canvas= MyCanvas(width=1000, height=600)
     canvas.random_add(int(sys.argv[2]), int(sys.argv[3]))
 
     # print(canvas.operations)
