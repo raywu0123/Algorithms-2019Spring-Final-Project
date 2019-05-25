@@ -13,6 +13,7 @@ using namespace bLib;
 namespace gtl = boost::polygon;
 
 typedef gtl::polygon_data<int> Polygon;
+typedef gtl::polygon_90_data<int> Polygon90;
 typedef gtl::polygon_90_with_holes_data<int> HolePolygon;
 typedef gtl::point_data<int> Point;
 typedef pair<Point, Point> Segment;
