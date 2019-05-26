@@ -16,8 +16,14 @@ jobs:
           name: Install CMAKE
           command: 'apt-get update && sudo apt-get install -y cmake'
       - run:
-          name: Creating Build Files
-          command: 'cd src/ && cmake -H. -Bbuild'
+          name: Install git
+          command: 'apt-get update && sudo apt-get install -y git'
       - run:
-          name: Creating Binary Files
-          command: 'cd src/ && cmake --build build'
+          name: Init Submodules
+          command: 'git submodule init && git submodule update'
+      - run:
+          name: Build
+          command: 'mkdir build && cd build && cmake .. && cmake --build .'
+      - run:
+          name: Run Unit Tests
+          command: 'cd build && ctest -C Debug -V'
