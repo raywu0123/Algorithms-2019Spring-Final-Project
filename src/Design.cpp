@@ -41,14 +41,17 @@ void Design::_merge(
             int id2 = adjshape->getId(); if(id1 == id2) continue;
             
             bool bconnect = false;
-            for(int k=0; k<_polygon_list[id1]->m_realBoxes.size(); k++)
-            for(int l=0; l<_polygon_list[id2]->m_realBoxes.size(); l++) {
-                bBox* box1 = _polygon_list[id1]->m_realBoxes[k];
-                bBox* box2 = _polygon_list[id2]->m_realBoxes[l];
-                if (not box1->overlaps(box2, true)) continue;
-                bconnect = true;
+            for(int k=0; k<_polygon_list[id1]->m_realBoxes.size(); k++) {
+                for (int l = 0; l < _polygon_list[id2]->m_realBoxes.size(); l++) {
+                    bBox *box1 = _polygon_list[id1]->m_realBoxes[k];
+                    bBox *box2 = _polygon_list[id2]->m_realBoxes[l];
+                    if (box1->overlaps(box2, true)) {
+                        bconnect = true;
+                        break;
+                    }
+                }
+                if(bconnect) break;
             }
-
             if(bconnect) add_edge(id1, id2, G);
         }
     }
@@ -66,7 +69,8 @@ void Design::_merge(
     tqdm bar;
     for(int i=0; i<m_mergeIds.size(); i++) {
         bar.progress(i, m_mergeIds.size());
-        if(m_mergeIds[i].empty()) continue;
+        if(m_mergeIds[i].size() <= 1) continue;
+
         gtl::property_merge_90<int, int> pm;
         for(int sid : m_mergeIds[i]) {
             bShape* pmyshape = _polygon_list[sid];
