@@ -37,6 +37,28 @@ int pnpoly(const vector<Point>& verts, int testx, int testy)
 }
 
 
+void Splitter::boost_split(bShape* polygon, const gtl::orientation_2d_enum& mode) {
+    const vector<bBox*>& realBoxes = polygon->m_realBoxes;
+    PolygonSet ps;
+    for(auto box : realBoxes) {
+        ps.insert(gtl::construct<Rectangle>(box->x1(), box->y1(), box->x2(), box->y2()));
+    }
+    vector<Polygon> rectangles;
+    ps.get_rectangles(rectangles, mode);
+    vector<bBox> boxes;
+    for(auto & rectangle : rectangles) {
+        boxes.emplace_back(
+                rectangle.coords_[0].x(),
+                rectangle.coords_[0].y(),
+                rectangle.coords_[2].x(),
+                rectangle.coords_[2].y()
+        );
+    }
+    polygon->m_realBoxes.clear();
+    polygon->setRealBoxes(boxes);
+}
+
+
 void Splitter::split(bShape* polygon) {
     HolePolygon hp = _build_graph(polygon);
 

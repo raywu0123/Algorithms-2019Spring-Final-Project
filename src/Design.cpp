@@ -12,11 +12,7 @@ void Design::execute(const Operation& op) {
 }
 
 
-void Design::_merge(
-    const vector<bShape*>& new_polygons,
-    const gtl::orientation_2d& split_orientation,
-    bool verbose
-) {
+void Design::_merge(const vector<bShape*>& new_polygons) {
     for(auto shape : new_polygons) {
         shape->setId(_polygon_list.size());
         _polygon_list.push_back(shape);
@@ -95,10 +91,8 @@ void Design::_merge(
 
     _polygon_list_quick_delete(sid_to_be_erased);
     _maintain_polygon_indexes();
-    if (verbose) {
-        std::cout << std::endl;
-        std::cout << "STAT| merge complete into " << num << " components." << std::endl;
-    }
+    std::cout << std::endl;
+    std::cout << "STAT| Merge complete into " << num << " components" << std::endl;
 }
 
 
@@ -320,19 +314,18 @@ void Design::_maintain_vpoints(){
     _maintain_polygon_indexes();
 }
 
+
 void Design::_split(const string& type) {
-    if(type == "SO") _split_o();
-    else if(type == "SV") _merge(vector<bShape*>(), gtl::VERTICAL, false);
-    else if(type == "SH") _merge(vector<bShape*>(), gtl::HORIZONTAL, false);
-    else cerr << "ERR | Incorrect split type: " << type << endl;
-    cout << "STAT| Split complete." << endl;
-}
-
-
-void Design::_split_o() {
     for(auto & polygon : _polygon_list) {
-        Splitter::split(polygon);
+        if(type == "SO")    Splitter::split(polygon);
+        else if(type == "SV") Splitter::boost_split(polygon, gtl::VERTICAL);
+        else if(type == "SH") Splitter::boost_split(polygon, gtl::HORIZONTAL);
+        else {
+            cerr << "ERR | Incorrect split type: " << type << endl;
+            break;
+        }
     }
+    cout << "STAT| Split complete" << endl;
 }
 
 
@@ -340,6 +333,7 @@ void Design::write_output(char* filename) {
     cout << "STAT| Writing output to " << filename << endl;
     ofstream output_file;
     output_file.open(filename);
+    int rect_count = 0;
     for(auto polygon : _polygon_list) {
         for(auto rectangle : polygon->m_realBoxes) {
             output_file << "RECT "
@@ -347,8 +341,10 @@ void Design::write_output(char* filename) {
                         << rectangle->y1() << " "
                         << rectangle->x2() << " "
                         << rectangle->y2() << " ;" << endl;
+            rect_count ++;
         }
     }
     output_file.close();
     cout << "STAT| Finish writing output to " << filename << endl;
+    cout << "STAT| Total of " << rect_count << " rectangles" << endl;
 }

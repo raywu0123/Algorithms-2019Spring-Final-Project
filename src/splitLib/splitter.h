@@ -23,8 +23,8 @@ typedef gtl::rectangle_data<int> Rectangle;
 
 class Splitter {
 public:
-    static void split(bLib::bShape*);
-
+    static void split(bShape*);
+    static void boost_split(bShape*, const gtl::orientation_2d_enum& mode);
 private:
 
     static HolePolygon _build_graph(bShape*);
