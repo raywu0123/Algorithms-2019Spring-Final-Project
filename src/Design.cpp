@@ -12,11 +12,7 @@ void Design::execute(const Operation& op) {
 }
 
 
-void Design::_merge(
-    const vector<bShape*>& new_polygons,
-    const gtl::orientation_2d& split_orientation,
-    bool verbose
-) {
+void Design::_merge(const vector<bShape*>& new_polygons) {
     for(auto shape : new_polygons) {
         shape->setId(_polygon_list.size());
         _polygon_list.push_back(shape);
@@ -41,14 +37,17 @@ void Design::_merge(
             int id2 = adjshape->getId(); if(id1 == id2) continue;
             
             bool bconnect = false;
-            for(int k=0; k<_polygon_list[id1]->m_realBoxes.size(); k++)
-            for(int l=0; l<_polygon_list[id2]->m_realBoxes.size(); l++) {
-                bBox* box1 = _polygon_list[id1]->m_realBoxes[k];
-                bBox* box2 = _polygon_list[id2]->m_realBoxes[l];
-                if (not box1->overlaps(box2, true)) continue;
-                bconnect = true;
+            for(int k=0; k<_polygon_list[id1]->m_realBoxes.size(); k++) {
+                for (int l = 0; l < _polygon_list[id2]->m_realBoxes.size(); l++) {
+                    bBox *box1 = _polygon_list[id1]->m_realBoxes[k];
+                    bBox *box2 = _polygon_list[id2]->m_realBoxes[l];
+                    if (box1->overlaps(box2, true)) {
+                        bconnect = true;
+                        break;
+                    }
+                }
+                if(bconnect) break;
             }
-
             if(bconnect) add_edge(id1, id2, G);
         }
     }
@@ -66,7 +65,8 @@ void Design::_merge(
     tqdm bar;
     for(int i=0; i<m_mergeIds.size(); i++) {
         bar.progress(i, m_mergeIds.size());
-        if(m_mergeIds[i].empty()) continue;
+        if(m_mergeIds[i].size() <= 1) continue;
+
         gtl::property_merge_90<int, int> pm;
         for(int sid : m_mergeIds[i]) {
             bShape* pmyshape = _polygon_list[sid];
@@ -85,52 +85,14 @@ void Design::_merge(
         }
         map< set<int>, gtl::polygon_90_set_data<int> > result;
         pm.merge(result);
-        set<int> settmp; settmp.insert(0);
-        auto itr = result.find(settmp);
-        const gtl::polygon_90_set_data<int>& polyset = itr->second;
-        vector<Polygon> output;
-        polyset.get_polygons(output);
-        Polygon& poly = output[0];
-
-        vector<bPoint> vpoints;
-        int xl = INT_MAX, yl = INT_MAX;
-        int xh = INT_MIN, yh = INT_MIN;
-        auto poly_itr = poly.begin(), poly_end = poly.end();
-        for(; poly_itr != poly_end; poly_itr++) {
-            int x = gtl::x(*poly_itr);
-            int y = gtl::y(*poly_itr);
-            vpoints.emplace_back(x, y);
-            if (xl > x) xl = x;
-            if (yl > y) yl = y;
-            if (xh < x) xh = x;
-            if (yh < y) yh = y;
-        }
-
-        auto* pmyshape = new bShape(xl, yl, xh, yh);
-        pmyshape->setPoints(vpoints);
-
-        vector<Polygon> rectangles;
-        polyset.get_rectangles(rectangles);
-        vector<bBox> vBoxes;
-        for(auto & rectangle : rectangles) {
-            vBoxes.emplace_back(
-                rectangle.coords_[0].x(),
-                rectangle.coords_[0].y(),
-                rectangle.coords_[2].x(),
-                rectangle.coords_[2].y()
-            );
-        }
-        assert(not vBoxes.empty());
-        pmyshape->setRealBoxes(vBoxes);
+        auto* pmyshape = _get_shape_from_merge_result(result);
         _polygon_list.push_back(pmyshape);
     }
 
     _polygon_list_quick_delete(sid_to_be_erased);
     _maintain_polygon_indexes();
-    if (verbose) {
-        std::cout << std::endl;
-        std::cout << "STAT| merge complete into " << num << " components." << std::endl;
-    }
+    std::cout << std::endl;
+    std::cout << "STAT| Merge complete into " << num << " components" << std::endl;
 }
 
 
@@ -275,41 +237,7 @@ bool Design::_boxes2vpoints(bShape* &curshape, vector<bShape *>& result_to_appen
             }
             map< set<int>, gtl::polygon_90_set_data<int> > result;
             pm.merge(result);
-            set<int> settmp; settmp.insert(0);
-            auto itr = result.find(settmp);
-            gtl::polygon_90_set_data<int> polyset = itr->second;
-            vector<Polygon> output;
-            polyset.get_polygons(output);
-            Polygon& poly = output[0];
-
-            vector<bPoint> vpoints;
-            int xl = INT_MAX, yl = INT_MAX;
-            int xh = INT_MIN, yh = INT_MIN;
-            auto poly_itr = poly.begin(), poly_end = poly.end();
-            for(; poly_itr != poly_end; poly_itr++) {
-                int x = gtl::x(*poly_itr);
-                int y = gtl::y(*poly_itr);
-                vpoints.emplace_back(x, y);
-                if (xl > x) xl = x;
-                if (yl > y) yl = y;
-                if (xh < x) xh = x;
-                if (yh < y) yh = y;
-            }
-            new_pmyshape = new bShape(xl, yl, xh, yh);
-            new_pmyshape->setPoints(vpoints);
-
-            vector<Polygon> rectangles;
-            polyset.get_rectangles(rectangles);
-            vector<bBox> vBoxes;
-            for(auto & rectangle : rectangles) {
-                vBoxes.emplace_back(
-                        rectangle.coords_[0].x(),
-                        rectangle.coords_[0].y(),
-                        rectangle.coords_[2].x(),
-                        rectangle.coords_[2].y()
-                );
-            }
-            new_pmyshape->setRealBoxes(vBoxes);
+            new_pmyshape = _get_shape_from_merge_result(result);
         }
         if (m_mergeIds.size() == 1){
             // delete curshape;
@@ -322,6 +250,49 @@ bool Design::_boxes2vpoints(bShape* &curshape, vector<bShape *>& result_to_appen
     }
     return false;
 }
+
+
+bShape* Design::_get_shape_from_merge_result(
+    map< set<int>, gtl::polygon_90_set_data<int> >& result
+) {
+    set<int> settmp; settmp.insert(0);
+    auto itr = result.find(settmp);
+    gtl::polygon_90_set_data<int> polyset = itr->second;
+    vector<Polygon> output;
+    polyset.get_polygons(output);
+    Polygon& poly = output[0];
+
+    vector<bPoint> vpoints;
+    int xl = INT_MAX, yl = INT_MAX;
+    int xh = INT_MIN, yh = INT_MIN;
+    auto poly_itr = poly.begin(), poly_end = poly.end();
+    for(; poly_itr != poly_end; poly_itr++) {
+        int x = gtl::x(*poly_itr);
+        int y = gtl::y(*poly_itr);
+        vpoints.emplace_back(x, y);
+        if (xl > x) xl = x;
+        if (yl > y) yl = y;
+        if (xh < x) xh = x;
+        if (yh < y) yh = y;
+    }
+    bShape* new_pmyshape = new bShape(xl, yl, xh, yh);
+    new_pmyshape->setPoints(vpoints);
+
+    vector<Polygon> rectangles;
+    polyset.get_rectangles(rectangles);
+    vector<bBox> vBoxes;
+    for(auto & rectangle : rectangles) {
+        vBoxes.emplace_back(
+                rectangle.coords_[0].x(),
+                rectangle.coords_[0].y(),
+                rectangle.coords_[2].x(),
+                rectangle.coords_[2].y()
+        );
+    }
+    new_pmyshape->setRealBoxes(vBoxes);
+    return new_pmyshape;
+}
+
 
 void Design::_maintain_vpoints(){
     vector<bLib::bShape *> polygon_list_to_append;
@@ -343,20 +314,18 @@ void Design::_maintain_vpoints(){
     _maintain_polygon_indexes();
 }
 
+
 void Design::_split(const string& type) {
-    _split_o();
-//    if(type == "SO") _split_o();
-//    else if(type == "SV") _merge(vector<bShape*>(), gtl::VERTICAL, false);
-//    else if(type == "SH") _merge(vector<bShape*>(), gtl::HORIZONTAL, false);
-//    else cerr << "ERR | Incorrect split type: " << type << endl;
-//    cout << "STAT| Split complete." << endl;
-}
-
-
-void Design::_split_o() {
     for(auto & polygon : _polygon_list) {
-        Splitter::split(polygon);
+        if(type == "SO")    Splitter::split(polygon);
+        else if(type == "SV") Splitter::boost_split(polygon, gtl::VERTICAL);
+        else if(type == "SH") Splitter::boost_split(polygon, gtl::HORIZONTAL);
+        else {
+            cerr << "ERR | Incorrect split type: " << type << endl;
+            break;
+        }
     }
+    cout << "STAT| Split complete" << endl;
 }
 
 
@@ -364,6 +333,7 @@ void Design::write_output(char* filename) {
     cout << "STAT| Writing output to " << filename << endl;
     ofstream output_file;
     output_file.open(filename);
+    int rect_count = 0;
     for(auto polygon : _polygon_list) {
         for(auto rectangle : polygon->m_realBoxes) {
             output_file << "RECT "
@@ -371,8 +341,10 @@ void Design::write_output(char* filename) {
                         << rectangle->y1() << " "
                         << rectangle->x2() << " "
                         << rectangle->y2() << " ;" << endl;
+            rect_count ++;
         }
     }
     output_file.close();
     cout << "STAT| Finish writing output to " << filename << endl;
+    cout << "STAT| Total of " << rect_count << " rectangles" << endl;
 }

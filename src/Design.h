@@ -29,11 +29,9 @@ public:
 
 private:
     void _split(const string& type);
-    void _split_o();
-    void _merge(
-        const vector<bLib::bShape *>& polygon_list,
-        const gtl::orientation_2d& split_orientation = gtl::HORIZONTAL,
-        bool verbose = true
+    void _merge(const vector<bLib::bShape *>& polygon_list);
+    static bShape* _get_shape_from_merge_result(
+            map< set<int>, gtl::polygon_90_set_data<int> >&
     );
     void _clip(const vector<bLib::bShape *>& polygon_list);
     void _maintain_vpoints();
