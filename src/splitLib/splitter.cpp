@@ -372,6 +372,10 @@ vector<HolePolygon> Splitter::_dissect_by_subregions(
         }
     }
 
+    // cleanup bshapes
+    for(auto* shape: bshapes_of_subregions)
+        delete shape;
+
     // create HolePolygons
     vector<HolePolygon> hps;
     for(int subregion_idx=0; subregion_idx<subregions.size(); subregion_idx++) {
