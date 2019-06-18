@@ -18,37 +18,32 @@ void Design::_merge(const vector<bShape*>& new_polygons) {
         _polygon_list.push_back(shape);
     }
     // Step 1: init RTree
-    bLibRTree<bShape> m_rtree;
-    for(auto & i : _polygon_list)
-        m_rtree.insert(i);
+    bLibRTree<bBox> m_rtree;
+    for(auto& polygon : _polygon_list) {
+        int id = polygon->getId();
+        for(auto& rect : polygon->m_realBoxes) {
+            rect->setId(id);
+            m_rtree.insert(rect);
+        }
+    }
 
     // Step 2: build up graph
     Graph G(_polygon_list.size());
-    for(auto shape : _polygon_list) {
-        int id1 = shape->getId(); // assert(id1 == i);
-        m_rtree.search(
-            shape->x1(),
-            shape->y1(),
-            shape->x2(),
-            shape->y2());
-        int size = bLibRTree<bShape>::s_searchResult.size();
-        for(int j=0; j<size; j++) {
-            bShape* adjshape = bLibRTree<bShape>::s_searchResult[j];
-            int id2 = adjshape->getId(); if(id1 == id2) continue;
-            
-            bool bconnect = false;
-            for(int k=0; k<_polygon_list[id1]->m_realBoxes.size(); k++) {
-                for (int l = 0; l < _polygon_list[id2]->m_realBoxes.size(); l++) {
-                    bBox *box1 = _polygon_list[id1]->m_realBoxes[k];
-                    bBox *box2 = _polygon_list[id2]->m_realBoxes[l];
-                    if (box1->overlaps(box2, true)) {
-                        bconnect = true;
-                        break;
-                    }
+    for(auto& polygon : _polygon_list) {
+        int id1 = polygon->getId(); // assert(id1 == i);
+        for(auto& rect: polygon->m_realBoxes) {
+            m_rtree.search(
+                rect->x1(),
+                rect->y1(),
+                rect->x2(),
+                rect->y2()
+            );
+            for(auto& result_rect : bLibRTree<bBox>::s_searchResult) {
+                int id2 = result_rect->getId();
+                if(id1 != id2 and rect->overlaps(result_rect)) {
+                    add_edge(id1, id2, G);
                 }
-                if(bconnect) break;
             }
-            if(bconnect) add_edge(id1, id2, G);
         }
     }
 
