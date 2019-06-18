@@ -27,3 +27,18 @@ jobs:
       - run:
           name: Run Unit Tests
           command: 'cd build && ctest -C Debug -V'
+      - run:
+          name: Install Python
+          command: 'apt-get update
+          && sudo apt-get install -y python3.6
+          && sudo apt-get install -y python3-pip
+          && pip3 install --upgrade pip'
+      - run:
+          name: Install Python Packages
+          command: 'pip3 install numpy'
+      - run:
+          name: Custom Test
+          command: 'cd test-scripts/ && bash ./custom_test.sh'
+      - run:
+          name: Random Test
+          command: 'cd test-scripts/ && bash ./random_test.sh 100'
