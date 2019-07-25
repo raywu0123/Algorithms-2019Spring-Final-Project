@@ -122,22 +122,24 @@ void Design::_clip(const vector<bShape*>& new_polygons) {
 
     // Step 2: Subtract
     // for all polygons to sub.
-    for(auto shape : new_polygons) {
-        m_rtree.search(
-            shape->x1(),
-            shape->y1(),
-            shape->x2(),
-            shape->y2());
-        int size = bLibRTree<bShape>::s_searchResult.size();
-        // for all related polygons.
-        for(int j=0; j<size; j++) {
-            bShape* adjshape = bLibRTree<bShape>::s_searchResult[j];
-            
-            std::vector<bBox*> newBoxes;
-            // for all boxes in one related polygon.
-            for(auto box1 : adjshape->m_realBoxes){
-                // for all boxes in one polygon to sub.
-                for(auto box2 : shape->m_realBoxes){
+    for(auto& polygon : new_polygons) {
+        // int id1 = polygon->getId(); // assert(id1 == i);
+        // for all boxes in one polygon to sub.
+        for(auto& box2: polygon->m_realBoxes) {
+            m_rtree.search(
+                box2->x1(),
+                box2->y1(),
+                box2->x2(),
+                box2->y2()
+            );
+            int size = bLibRTree<bShape>::s_searchResult.size();
+            // for all related polygons.
+            for(int j=0; j<size; j++) {
+                bShape* adjshape = bLibRTree<bShape>::s_searchResult[j];
+                
+                std::vector<bBox*> newBoxes;
+                // for all boxes in one related polygon.
+                for(auto box1 : adjshape->m_realBoxes){
                     // if nothing to sub, pass the box to newBoxes.
                     if (not box1->overlaps(box2, false)) newBoxes.push_back(box1);
                     // if to sub, pass the subbed result(a vector) to newBoxes.
@@ -148,13 +150,13 @@ void Design::_clip(const vector<bShape*>& new_polygons) {
                         delete box1;
                     }
                 }
+                // update the subbed result.
+                adjshape->m_realBoxes.clear();
+                adjshape->m_realBoxes.shrink_to_fit();
+                if (!newBoxes.empty())
+                    adjshape->m_realBoxes.insert(adjshape->m_realBoxes.end(), newBoxes.begin(), newBoxes.end());
+                adjshape->to_update_vpoints = true;
             }
-            // update the subbed result.
-            adjshape->m_realBoxes.clear();
-            adjshape->m_realBoxes.shrink_to_fit();
-            if (!newBoxes.empty())
-                adjshape->m_realBoxes.insert(adjshape->m_realBoxes.end(), newBoxes.begin(), newBoxes.end());
-            adjshape->to_update_vpoints = true;
         }
     }
     _maintain_vpoints();
