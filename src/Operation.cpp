@@ -32,7 +32,8 @@ void Operation::add_polygon(const string& description) {
     }
 
     if (vpoints.empty()) return;
-    vpoints.resize(vpoints.size() - 1, true);
+    if(*vpoints.begin() == *vpoints.end())
+        vpoints.resize(vpoints.size() - 1, true);
 
     auto* pmyshape = new bShape(xl, yl, xh, yh);
     pmyshape->setPoints(vpoints);
