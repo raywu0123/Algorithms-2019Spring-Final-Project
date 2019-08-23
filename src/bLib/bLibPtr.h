@@ -30,6 +30,7 @@ public:
   static bool polygon2Rect(std::vector<bPoint>& points, std::vector<Type> & vBoxes, int flag=-1);
 
 private:
+  static void remove_continuous_points(std::vector<bPoint>&);
   static void removeDuplicate(std::vector<bPoint>&);
   static bool findLine(const std::vector<bPoint> points);
   static bool findPkPlPm(const std::vector<bPoint>&, bPoint&, bPoint&, bPoint&);
@@ -75,10 +76,11 @@ PTR::polygon2Rect(std::vector<bPoint>& vpoints, std::vector<Type>& boxes, int fl
   {
     std::cout << "ERROR| PTR::polygon2Rect(), find three continuous points are on a line" << std::endl;
     print(vpoints);
-    return false;
+//    return false;
   }
-  removeDuplicate(vpoints);  // after this function, the order of points canNOT be maintained
-  
+  remove_continuous_points(vpoints);
+//  removeDuplicate(vpoints);  // after this function, the order of points canNOT be maintained
+
 
   // Step 2: iteratively remove box
   while (vpoints.size() > 0)
@@ -88,12 +90,12 @@ PTR::polygon2Rect(std::vector<bPoint>& vpoints, std::vector<Type>& boxes, int fl
 
     if (false == findPkPlPm(vpoints, Pk, Pl, Pm))
     {
-      //std::cout << "ERROR| PTR::Polygon2Rectangle(), can NOT find Pk, Pl, and Pm." << std::endl;
+      std::cout << "ERROR| PTR::Polygon2Rectangle(), can NOT find Pk, Pl, and Pm." << std::endl;
       return false;
     }
     if (false == findVkVlVm(vpoints, Vk, Vl, Vm))
     {
-      //std::cout << "ERROR| PTR::Polygon2Rectangle(), can NOT find Vk, Vl, and Vm." << std::endl;
+      std::cout << "ERROR| PTR::Polygon2Rectangle(), can NOT find Vk, Vl, and Vm." << std::endl;
       return false;
     }
 
@@ -129,7 +131,7 @@ PTR::polygon2Rect(std::vector<bPoint>& vpoints, std::vector<Type>& boxes, int fl
 #ifdef _DEBUG_PTR
     printf ("DEBUG| add box (%d %d), (%d %d) into output vector<myBox>\n", box.x1(), box.y1(), box.x2(), box.y2());
 #endif
-    
+
     F(vpoints, box.x1(), box.y1());
     F(vpoints, box.x1(), box.y2());
     F(vpoints, box.x2(), box.y1());
@@ -146,6 +148,30 @@ PTR::polygon2Rect(std::vector<bPoint>& vpoints, std::vector<Type>& boxes, int fl
 }
 //}}}
 
+inline void
+PTR::remove_continuous_points(std::vector<bLib::bPoint>& vpoints)
+{
+    std::vector<bPoint> new_vpoints;
+    bPoint v0 = vpoints.back();
+
+    vpoints.push_back(vpoints.front());
+    for(int i=0; i<vpoints.size() - 1; i++) {
+        bool is_cont = false;
+        bPoint cur_point = vpoints[i];
+        bPoint next_point = vpoints[i + 1];
+        if(v0.x() == cur_point.x() and cur_point.x() == next_point.x())
+            is_cont = true;
+
+        if(v0.y() == cur_point.y() and cur_point.y() == next_point.y())
+            is_cont = true;
+
+        if(!is_cont) {
+            new_vpoints.push_back(cur_point);
+            v0 = cur_point;
+        }
+    }
+    vpoints = new_vpoints;
+}
 
 inline void
 PTR::removeDuplicate(std::vector<bPoint>& vpoints)
@@ -174,10 +200,11 @@ PTR::findPkPlPm(const std::vector<bPoint>& points, bPoint& Pk, bPoint& Pl, bPoin
   #ifdef _DEBUG_PTR
     printf ("DEBUG| points.size() = %d\n", (int)points.size());
   #endif
+    std::cout << "size < 4" << std::endl;
     return false;
   }
 
-  int min_y = INT_MAX; 
+  int min_y = INT_MAX;
   int min_x = INT_MAX; int next_x = INT_MAX;
 
   // first round, determine Pk, Pl
@@ -227,8 +254,14 @@ PTR::findPkPlPm(const std::vector<bPoint>& points, bPoint& Pk, bPoint& Pl, bPoin
     } // for sitr
   }
   #endif
-  if (Ym >= INT_MAX) return false;
-  if (Xm >= INT_MAX) return false;
+  if (Ym >= INT_MAX) {
+      std::cout << "Ym >= INT_MAX" << std::endl;
+      return false;
+  }
+  if (Xm >= INT_MAX) {
+      std::cout << "Xm >= INT_MAX" << std::endl;
+      return false;
+  }
 
   Pm.set(Xm, Ym);
   return true;
